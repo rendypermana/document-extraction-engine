@@ -1,0 +1,17 @@
+﻿before upload: {"runDisabled":true,"title":"Pilih berkas PDF, PNG, atau JPG terlebih dahulu."}
+after upload: {
+  "fileName": "diag-sample.pdf",
+  "fileType": "application/pdf",
+  "fileSize": 18,
+  "fileState": "Berkas siap",
+  "runDisabled": false,
+  "title": "",
+  "progressStage": "menunggu",
+  "instructionsLen": 163
+}
+after run: {
+  "runState": "Gagal",
+  "errors": "internal_error ┬╖ seluruh runTidak dapat menghubungi backend. Periksa koneksi lalu coba lagi.",
+  "progressCount": "0 / 0",
+  "stage": "menunggu"
+}

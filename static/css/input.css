@@ -1,0 +1,176 @@
+@import "tailwindcss";
+
+/* Explicit sources: the scanner must see every literal class string in the UI.
+   `js/vendor` is excluded on purpose: marked/DOMPurify are third-party browser
+   builds whose source text contains words like "shadow" that Tailwind would
+   otherwise turn into unwanted default utilities (which carry alpha colors). */
+@source "../index.html";
+@source "../js";
+@source not "../js/vendor";
+
+/* The palette is exactly black and white. No other color token may exist. */
+@theme {
+  --color-*: initial;
+  --color-black: #000000;
+  --color-white: #ffffff;
+
+  --shadow-brutal-sm: 2px 2px 0 #000000;
+  --shadow-brutal: 4px 4px 0 #000000;
+  --shadow-brutal-lg: 8px 8px 0 #000000;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    background-color: #ffffff;
+    color: #000000;
+  }
+
+  :focus-visible {
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background-color: #000000;
+    color: #ffffff;
+  }
+
+  /* Native controls must not fall back to gray/blue UI chrome. */
+  input::placeholder,
+  textarea::placeholder {
+    color: #000000;
+    opacity: 1;
+  }
+
+  /*
+   * Sanitized Markdown output is the only place where element-level styling is
+   * justified: the HTML comes from `marked` + `DOMPurify`, so no utility classes
+   * can be attached to it. Strictly binary, strictly nested under .md-output.
+   */
+  .md-output > :first-child {
+    margin-top: 0;
+  }
+
+  .md-output h1,
+  .md-output h2,
+  .md-output h3,
+  .md-output h4 {
+    font-weight: 900;
+    line-height: 1.15;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    border-bottom: 3px solid #000000;
+    padding-bottom: 0.25rem;
+  }
+
+  .md-output h1 {
+    font-size: 1.875rem;
+    text-transform: uppercase;
+  }
+
+  .md-output h2 {
+    font-size: 1.5rem;
+  }
+
+  .md-output h3 {
+    font-size: 1.25rem;
+    border-bottom-width: 2px;
+  }
+
+  .md-output p,
+  .md-output ul,
+  .md-output ol,
+  .md-output blockquote,
+  .md-output pre,
+  .md-output table {
+    margin-top: 0.75em;
+    margin-bottom: 0.75em;
+  }
+
+  .md-output ul,
+  .md-output ol {
+    padding-left: 1.5rem;
+  }
+
+  .md-output ul {
+    list-style-type: square;
+  }
+
+  .md-output ol {
+    list-style-type: decimal;
+  }
+
+  .md-output li {
+    margin-top: 0.25em;
+  }
+
+  .md-output a {
+    color: #000000;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .md-output a:focus-visible {
+    outline: 2px solid #000000;
+  }
+
+  .md-output blockquote {
+    border-left: 4px solid #000000;
+    padding-left: 1rem;
+    font-weight: 600;
+  }
+
+  .md-output code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    border: 2px solid #000000;
+    padding: 0 0.25rem;
+    font-size: 0.875em;
+  }
+
+  .md-output pre {
+    border: 3px solid #000000;
+    padding: 0.75rem;
+    overflow-x: auto;
+  }
+
+  .md-output pre code {
+    border: 0;
+    padding: 0;
+  }
+
+  .md-output table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .md-output th {
+    background-color: #000000;
+    color: #ffffff;
+    text-align: left;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .md-output th,
+  .md-output td {
+    border: 2px solid #000000;
+    padding: 0.5rem 0.625rem;
+    vertical-align: top;
+  }
+
+  .md-output hr {
+    border: 0;
+    border-top: 3px solid #000000;
+    margin: 1.5em 0;
+  }
+
+  .md-output img {
+    max-width: 100%;
+    border: 3px solid #000000;
+  }
+}

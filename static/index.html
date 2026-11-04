@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Document Extraction Engine — Pratinjau UI</title>
+    <meta
+      name="description"
+      content="Pratinjau antarmuka ekstraksi dokumen: unggah PDF/PNG/JPG, atur instruksi, jalankan, tinjau Markdown dan referensi sumber."
+    />
+    <meta name="color-scheme" content="light" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000000'/%3E%3Crect x='7' y='7' width='18' height='3' fill='%23ffffff'/%3E%3Crect x='7' y='14' width='12' height='3' fill='%23ffffff'/%3E%3Crect x='7' y='21' width='18' height='3' fill='%23ffffff'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+    <script type="module" src="/js/main.js"></script>
+  </head>
+  <body class="min-h-screen bg-white font-sans text-black">
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:border-[3px] focus:border-black focus:bg-white focus:px-4 focus:py-3 focus:text-sm focus:font-black focus:uppercase focus:text-black"
+      >Lompat ke konten</a
+    >
+
+    <header class="border-b-4 border-black bg-white">
+      <div
+        class="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-6 lg:flex-row lg:items-end lg:justify-between lg:px-8 lg:py-10"
+      >
+        <div class="min-w-0">
+          <p class="mb-2 font-mono text-xs font-bold uppercase tracking-[0.2em] sm:text-sm">
+            Ekstraksi Dokumen / 01
+          </p>
+          <h1
+            class="text-4xl font-black uppercase leading-[0.95] tracking-tight sm:text-5xl lg:text-6xl"
+          >
+            Ekstrak.<br />Verifikasi.<br />Unduh.
+          </h1>
+        </div>
+        <div class="w-full shrink-0 border-[3px] border-black bg-black p-4 lg:w-auto">
+          <p class="font-mono text-xs font-black uppercase tracking-[0.2em] text-white">
+            Pratinjau UI
+          </p>
+          <p class="mt-2 text-sm font-bold text-white">
+            Data contoh di sisi klien. Backend belum terhubung.
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <div
+      role="note"
+      aria-labelledby="demo-notice-title"
+      class="border-b-4 border-black bg-black"
+    >
+      <div
+        class="mx-auto flex w-full max-w-[1200px] flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-8"
+      >
+        <p id="demo-notice-title" class="font-mono text-xs font-black uppercase tracking-[0.2em] text-white">
+          Mode pratinjau — bukan hasil nyata
+        </p>
+        <p class="max-w-[62ch] text-sm font-semibold text-white">
+          Seluruh status, Markdown, dan referensi di halaman ini berasal dari data contoh yang
+          ditanam di peramban. Endpoint <span class="border-2 border-white px-1 font-mono text-xs">/api/*</span>
+          belum diimplementasikan, jadi tidak ada dokumen yang benar-benar diproses.
+        </p>
+      </div>
+    </div>
+
+    <main id="main" class="mx-auto w-full max-w-[1200px] px-4 py-8 lg:px-8 lg:py-12">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
+        <!-- ================= KONFIGURASI ================= -->
+        <section class="min-w-0 lg:col-span-5" aria-labelledby="config-title">
+          <div class="border-[3px] border-black bg-white shadow-brutal">
+            <div class="border-b-[3px] border-black bg-black px-4 py-3 lg:px-6">
+              <h2
+                id="config-title"
+                class="font-mono text-sm font-black uppercase tracking-[0.2em] text-white"
+              >
+                01 / Konfigurasi
+              </h2>
+            </div>
+
+            <div class="flex flex-col gap-6 p-4 lg:p-6">
+              <!-- UPLOAD -->
+              <div>
+                <span class="mb-2 block font-mono text-xs font-black uppercase tracking-[0.15em]"
+                  >Berkas dokumen</span
+                >
+                <label
+                  for="file-input"
+                  id="dropzone"
+                  class="flex min-h-[132px] cursor-pointer flex-col items-center justify-center gap-2 border-[3px] border-dashed border-black bg-white p-6 text-center transition-[transform,box-shadow] duration-150 hover:bg-black focus-within:outline-2 focus-within:outline-offset-4 focus-within:outline-black motion-reduce:transition-none"
+                >
+                  <span class="font-mono text-xs font-black uppercase tracking-[0.2em]" id="file-state"
+                    >Belum ada berkas</span
+                  >
+                  <span class="text-sm font-bold" id="file-hint"
+                    >Tarik berkas ke sini atau pilih dari perangkat</span
+                  >
+                  <span class="font-mono text-xs font-semibold">PDF / PNG / JPG</span>
+                </label>
+                <input
+                  id="file-input"
+                  name="file"
+                  type="file"
+                  accept="application/pdf,image/png,image/jpeg"
+                  class="sr-only"
+                  aria-describedby="file-hint file-error"
+                />
+                <p
+                  id="file-error"
+                  role="alert"
+                  class="mt-2 hidden font-mono text-xs font-black uppercase"
+                ></p>
+              </div>
+
+
+              <!-- PROVIDER + DOMAIN -->
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label
+                    for="provider-select"
+                    class="mb-2 block font-mono text-xs font-black uppercase tracking-[0.15em]"
+                    >Provider</label
+                  >
+                  <select
+                    id="provider-select"
+                    name="provider"
+                    class="min-h-11 w-full appearance-none border-[3px] border-black bg-white px-3 py-2 font-bold text-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black"
+                    aria-describedby="provider-help"
+                  ></select>
+                  <p id="provider-help" class="mt-2 font-mono text-xs font-semibold"></p>
+                </div>
+                <div>
+                  <label
+                    for="domain-select"
+                    class="mb-2 block font-mono text-xs font-black uppercase tracking-[0.15em]"
+                    >Domain</label
+                  >
+                  <select
+                    id="domain-select"
+                    name="domain"
+                    class="min-h-11 w-full appearance-none border-[3px] border-black bg-white px-3 py-2 font-bold text-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black"
+                    aria-describedby="domain-help"
+                  ></select>
+                  <p id="domain-help" class="mt-2 font-mono text-xs font-semibold"></p>
+                </div>
+              </div>
+
+              <!-- INSTRUKSI -->
+              <div>
+                <div class="mb-2 flex items-baseline justify-between gap-3">
+                  <label
+                    for="instructions"
+                    class="font-mono text-xs font-black uppercase tracking-[0.15em]"
+                    >Instruksi ekstraksi</label
+                  >
+                  <span id="instructions-help" class="font-mono text-xs font-semibold"
+                    ><span id="instructions-count">0</span>/2000</span
+                  >
+                </div>
+                <textarea
+                  id="instructions"
+                  name="instructions"
+                  rows="6"
+                  maxlength="2000"
+                  class="w-full border-[3px] border-black bg-white px-3 py-2 text-base font-semibold leading-relaxed text-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black"
+                  aria-describedby="instructions-help instructions-error"
+                ></textarea>
+                <p
+                  id="instructions-error"
+                  role="alert"
+                  class="mt-2 hidden font-mono text-xs font-black uppercase"
+                ></p>
+              </div>
+
+
+
+              <!-- OPSI -->
+              <fieldset class="border-[3px] border-black p-4">
+                <legend class="px-2 font-mono text-xs font-black uppercase tracking-[0.15em]">
+                  Opsi proses
+                </legend>
+                <div class="flex flex-col gap-3">
+                  <label class="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-bold">
+                    <input
+                      id="opt-cache"
+                      type="checkbox"
+                      checked
+                      class="h-5 w-5 shrink-0 cursor-pointer accent-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                    />
+                    Gunakan cache halaman
+                  </label>
+                  <label class="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-bold">
+                    <input
+                      id="opt-aggregate"
+                      type="checkbox"
+                      checked
+                      class="h-5 w-5 shrink-0 cursor-pointer accent-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                    />
+                    Gabungkan tabel lintas halaman
+                  </label>
+                </div>
+              </fieldset>
+
+              <!-- AKSI -->
+              <div class="flex flex-col gap-3">
+                <button
+                  id="run-button"
+                  type="button"
+                  class="min-h-11 border-[3px] border-black bg-black px-5 py-3 font-extrabold uppercase tracking-wide text-white shadow-brutal transition-[transform,box-shadow] duration-150 hover:bg-white hover:text-black hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-brutal-sm active:translate-x-[4px] active:translate-y-[4px] active:shadow-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black motion-reduce:transition-none motion-reduce:transform-none disabled:cursor-not-allowed disabled:line-through disabled:shadow-none"
+                >
+                  Jalankan ekstraksi
+                </button>
+                <button
+                  id="reset-button"
+                  type="button"
+                  class="min-h-11 border-[3px] border-black bg-white px-5 py-3 font-extrabold uppercase tracking-wide text-black shadow-brutal transition-[transform,box-shadow] duration-150 hover:bg-black hover:text-white hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-brutal-sm active:translate-x-[4px] active:translate-y-[4px] active:shadow-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black motion-reduce:transition-none motion-reduce:transform-none"
+                >
+                  Atur ulang
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ================= HASIL ================= -->
+        <section class="min-w-0 lg:col-span-7" aria-labelledby="result-title">
+          <div class="border-[3px] border-black bg-white shadow-brutal">
+            <div
+              class="flex flex-col gap-2 border-b-[3px] border-black bg-black px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-6"
+            >
+              <h2
+                id="result-title"
+                class="font-mono text-sm font-black uppercase tracking-[0.2em] text-white"
+              >
+                02 / Hasil
+              </h2>
+              <p id="run-state" class="font-mono text-xs font-black uppercase text-white">
+                Siap
+              </p>
+            </div>
+
+            <div class="flex flex-col gap-6 p-4 lg:p-6">
+              <!-- PROGRESS -->
+              <div id="progress-region" class="border-[3px] border-black p-4">
+                <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+                  <p class="font-mono text-xs font-black uppercase tracking-[0.15em]">
+                    Progres halaman
+                  </p>
+                  <p id="progress-count" class="font-mono text-sm font-black">0 / 0</p>
+                </div>
+                <div
+                  id="progressbar"
+                  role="progressbar"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  aria-valuenow="0"
+                  aria-labelledby="progress-label"
+                  class="h-6 w-full border-[3px] border-black bg-white"
+                >
+                  <div id="progress-fill" class="h-full w-0 bg-black"></div>
+                </div>
+                <p id="progress-label" class="mt-3 font-mono text-xs font-semibold">
+                  Tahap: <span id="progress-stage">menunggu</span>
+                </p>
+                <ul
+                  id="page-list"
+                  class="mt-3 flex max-h-40 flex-wrap gap-2 overflow-y-auto font-mono text-xs font-bold"
+                  aria-label="Status per halaman"
+                ></ul>
+              </div>
+
+              <!-- ERROR & WARNING -->
+              <div id="messages-region" class="hidden flex-col gap-3">
+                <div id="errors-block" class="hidden">
+                  <p class="mb-2 font-mono text-xs font-black uppercase tracking-[0.15em]">
+                    Error
+                  </p>
+                  <ul id="errors-list" class="flex flex-col gap-2" role="alert"></ul>
+                </div>
+                <div id="warnings-block" class="hidden">
+                  <p class="mb-2 font-mono text-xs font-black uppercase tracking-[0.15em]">
+                    Peringatan
+                  </p>
+                  <ul id="warnings-list" class="flex flex-col gap-2"></ul>
+                </div>
+              </div>
+
+              <!-- MARKDOWN -->
+              <div>
+                <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <p class="font-mono text-xs font-black uppercase tracking-[0.15em]">
+                    Markdown ter-render
+                  </p>
+                  <button
+                    id="download-button"
+                    type="button"
+                    disabled
+                    class="min-h-11 border-[3px] border-black bg-white px-4 py-2 font-extrabold uppercase text-black shadow-brutal transition-[transform,box-shadow] duration-150 hover:bg-black hover:text-white hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-brutal-sm active:translate-x-[4px] active:translate-y-[4px] active:shadow-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black motion-reduce:transition-none motion-reduce:transform-none disabled:cursor-not-allowed disabled:line-through disabled:shadow-none"
+                  >
+                    Unduh .md
+                  </button>
+                </div>
+                <div
+                  id="markdown-pane"
+                  class="md-output max-h-[520px] overflow-auto border-[3px] border-black bg-white p-4"
+                  tabindex="0"
+                  aria-label="Hasil Markdown"
+                >
+                  <p class="font-mono text-sm font-bold uppercase">Belum ada hasil</p>
+                  <p class="mt-2 text-sm font-semibold">
+                    Pilih berkas, isi instruksi, lalu jalankan ekstraksi.
+                  </p>
+                </div>
+              </div>
+
+              <!-- REFERENSI -->
+              <div>
+                <div class="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                  <p class="font-mono text-xs font-black uppercase tracking-[0.15em]">
+                    Referensi sumber
+                  </p>
+                  <p id="references-summary" class="font-mono text-xs font-semibold">
+                    0 referensi
+                  </p>
+                </div>
+                <ul
+                  id="references-list"
+                  class="flex max-h-[420px] flex-col gap-3 overflow-y-auto"
+                  aria-label="Daftar referensi sumber"
+                >
+                  <li class="border-[3px] border-black border-dashed p-4">
+                    <p class="font-mono text-xs font-black uppercase">Tidak ada referensi</p>
+                    <p class="mt-2 text-sm font-semibold">
+                      Referensi muncul setelah run selesai.
+                    </p>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- METADATA -->
+              <div>
+                <p class="mb-2 font-mono text-xs font-black uppercase tracking-[0.15em]">
+                  Metadata run
+                </p>
+                <dl
+                  id="metadata-list"
+                  class="grid grid-cols-1 gap-px border-[3px] border-black bg-black sm:grid-cols-2"
+                ></dl>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer class="mt-10 border-t-4 border-black pt-6">
+        <p class="max-w-[80ch] font-mono text-xs font-semibold uppercase tracking-[0.1em]">
+          Pratinjau antarmuka · kontrak mengikuti docs/API.md · status dan referensi tidak boleh
+          diubah tampilannya menjadi lebih pasti daripada data aslinya
+        </p>
+      </footer>
+    </main>
+
+    <div id="live-region" role="status" aria-live="polite" class="sr-only"></div>
+  </body>
+</html>

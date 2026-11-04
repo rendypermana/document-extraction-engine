@@ -1,0 +1,13 @@
+﻿
+added 84 packages in 32s
+node.exe : npm warn allow-scripts 1 package has install scripts not yet covered by allowScripts:
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn allow-...y allowScripts::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm warn allow-scripts   @parcel/watcher@2.6.0 (install: node-gyp rebuild)
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to 
+allow.

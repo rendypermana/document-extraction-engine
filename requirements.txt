@@ -1,0 +1,10 @@
+# Runtime dependencies, pinned from the verified install (Python 3.13.0, Windows).
+# Source of truth: pyproject.toml [project.dependencies]. Keep both in sync.
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+pydantic==2.14.2
+pydantic-settings==2.16.2
+pymupdf==1.28.2
+pillow==13.0.0
+pyyaml==6.0.3
+google-genai==2.34.0

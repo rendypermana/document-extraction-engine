@@ -1,0 +1,40 @@
+﻿PASS  banner data contoh tampil ΓÇö Mode pratinjau ΓÇö bukan hasil nyata
+PASS  provider terisi ΓÇö fake,gemini
+PASS  domain terisi ΓÇö research_paper,tax_form
+PASS  instruksi bawaan terisi ΓÇö 163 char
+PASS  run terkunci tanpa berkas ΓÇö Pilih berkas PDF, PNG, atau JPG terlebih dahulu.
+PASS  berkas diterima ΓÇö e2e-sample.pdf ┬╖ 33 B
+PASS  run aktif setelah berkas dipilih
+FAIL  status terminal tercapai ΓÇö Gagal
+FAIL  markdown ter-render
+PASS  tidak ada script di hasil
+FAIL  referensi tampil ΓÇö 1 kartu
+FAIL  tiga status verifikasi dibedakan
+FAIL  status item uncertain dipertahankan
+FAIL  estimasi ditandai
+FAIL  error dan peringatan terlihat
+FAIL  usage tidak tersedia ditandai
+FAIL  validasi run tampil
+FAIL  progres dari laporan halaman ΓÇö 0 / 0
+FAIL  aria-valuenow sesuai halaman ΓÇö 0
+FAIL  tombol unduh aktif
+PASS  nama unduhan aman ΓÇö laporan-tahunan-2025-final.md
+node : file:///C:/Users/rendy/Downloads/TEST%20DOCUMENT/document-extraction-engine/node_modules/puppeteer-core/lib/esm/
+puppeteer/util/assert.js:15
+At line:1 char:73
++ ... cument-extraction-engine'; node scripts\e2e-ui-check.mjs 2>&1 | Out-F ...
++                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (file:///C:/User...il/assert.js:15:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+        throw new Error(message);
+              ^
+
+Error: No element found for selector: #markdown-pane a[data-ref="S1"]
+    at assert (file:///C:/Users/rendy/Downloads/TEST%20DOCUMENT/document-extraction-engine/node_modules/puppeteer-core/
+lib/esm/puppeteer/util/assert.js:15:15)
+    at CdpFrame.click (file:///C:/Users/rendy/Downloads/TEST%20DOCUMENT/document-extraction-engine/node_modules/puppete
+er-core/lib/esm/puppeteer/api/Frame.js:736:17)
+    at async file:///C:/Users/rendy/Downloads/TEST%20DOCUMENT/document-extraction-engine/scripts/e2e-ui-check.mjs:141:1
+
+Node.js v24.18.0

@@ -1,0 +1,9 @@
+services:
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: document-extraction-engine:ui-preview
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
