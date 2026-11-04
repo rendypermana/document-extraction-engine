@@ -69,9 +69,20 @@ To stop the application:
 docker compose down
 ```
 
-## Provider Configuration
+## Available Providers
 
-`PROVIDER` in `.env` sets the default provider. The UI can also select another configured, available provider for an individual run. Provider-specific keys and model IDs are configured in `.env`; do not commit that file or paste API keys into source code, logs, screenshots, or chat.
+The application currently supports these providers:
+
+- **Gemini** (`gemini`)
+- **Groq** (`groq`)
+- **OpenRouter** (`openrouter`)
+- **Fake** (`fake`) — deterministic integration testing only; it is not an AI model.
+
+Live provider availability depends on the corresponding API key and model being configured. `PROVIDER` in `.env` sets the default provider. The UI can also select another configured, available provider for an individual run.
+
+### Provider Configuration
+
+Provider-specific keys and model IDs are configured in `.env`; do not commit that file or paste API keys into source code, logs, screenshots, or chat.
 
 | Provider | Required settings | Notes |
 |---|---|---|
@@ -107,6 +118,8 @@ This PDF contains prose and conceptual figures, but no numeric charts, tables, f
 
 A live Groq evaluation used the configured model `openai/gpt-oss-120b` on the same 13-page research-paper sample, [`test_file/2608.16753v1.pdf`](test_file/2608.16753v1.pdf). Groq was selected for each run through the API; the application's `.env` default provider was not changed. The model was configured with structured output enabled and vision disabled.
 
+**Account tier note:** These Groq runs used free-tier access. The observed rate-limit failures should therefore be interpreted in the context of free-tier quotas, which can vary by account and change over time. The HTTP 413 responses were also observed; this evaluation does not establish that they were caused by the account tier.
+
 Two extraction instructions were tested without changing application code: one requested exhaustive text-layer extraction, and the other focused on the paper's central question, claims, recommendations, and conclusion. Both runs returned structured Markdown, but neither completed the document. Each processed **1 of 13 pages** and recorded **12 page errors**. Six errors in the full-content run and nine in the focused run were HTTP 413 capability errors; the remaining six and three errors, respectively, were Groq rate limits.
 
 | Instruction | Pages completed | Duration | Items | Evidence verified | Page errors |
@@ -121,6 +134,25 @@ These results show that Groq produced a small, evidence-backed extraction from t
 The supplied sample directory contained no PNG/JPG image, and this Groq configuration does not support vision. Visual-only content therefore could not be tested. The partial runs also provide no reliable coverage evidence for tables, numeric charts, form fields, or checkboxes. The cache and cross-page table-merge options are accepted by the application but are not implemented, so they do not alter these results.
 
 The detailed prompts, run IDs, source checks, error breakdown, metrics, and scope assessment are available in the [Groq test report](test_result/TEST_RESULT_GROQ.md).
+
+## Gemini Evaluation
+
+A live evaluation used Gemini `gemini-3.5-flash` with vision and structured output enabled on [`test_file/2608.16753v1.pdf`](test_file/2608.16753v1.pdf). Two different extraction instructions were submitted through the application without changing code: one requested all readable content, and the other focused on the paper's main argument and recommendations.
+
+**Account tier note:** These Gemini runs used free-tier access. The observed rate-limit failures should be interpreted in the context of free-tier quotas and request limits, which can vary by account and change over time; the test does not establish that the model or application would behave the same under paid-tier limits.
+
+Neither run successfully extracted any page. Both processed **0 of 13 pages**, returned zero items and zero source references, and ended with `completed_with_warnings`. All 13 page requests in each run failed with Gemini rate-limit errors, despite 39 retries per run. Each attempt took approximately three minutes:
+
+| Instruction | Pages completed | Duration | Items | Page errors | Retries |
+|---|---:|---:|---:|---:|---:|
+| Full-content extraction | 0/13 | 189.04 s | 0 | 13 rate limits | 39 |
+| Focused argument | 0/13 | 187.30 s | 0 | 13 rate limits | 39 |
+
+Schema and Markdown checks reported true, but `all_pages_processed=false`. This is a useful reliability observation: a structurally valid empty result is not evidence that extraction succeeded. Since the model returned no facts or references, extraction accuracy and evidence-match rate could not be calculated. Several source facts were manually confirmed in the PDF, but there were no Gemini answers to score against them.
+
+The configured Gemini capability includes vision, but these failed runs do not demonstrate image extraction. The only supplied sample was the PDF; no PNG/JPG image was present. Tables, numeric charts, form fields, and checkboxes were therefore not evaluated. Token usage and provider billing cost were also unavailable.
+
+The observed provider failure was consistently reported as a rate limit; the test does not establish whether the underlying cause was request rate, account quota, billing, or model access. The detailed prompts, source checks, run IDs, metrics, and limitations are documented in the [Gemini test report](test_result/TEST_RESULT_GEMINI.md).
 
 ## API Overview
 
