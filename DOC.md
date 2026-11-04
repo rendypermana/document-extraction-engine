@@ -86,6 +86,23 @@ Set the capability flags to match the selected model. Check the provider's curre
 
 When a provider is configured without vision, the application sends the page's extracted text rather than its rendered image. Text-only models therefore cannot reliably extract scanned pages without a text layer or interpret visual-only content such as charts. Choose a vision-capable model for those documents.
 
+## OpenRouter Evaluation
+
+A live sample evaluation was run with OpenRouter using `google/gemini-3-flash-preview` and the research-paper domain. The test input was the 13-page PDF at [`test_file/2608.16753v1.pdf`](test_file/2608.16753v1.pdf). The requested path `test_file/2608-16753v1.pdf` is not the current filename in the repository; the existing PDF filename uses a period after `2608`. The extracted Markdown sample is available at [`test_result/2608-16753v1.md`](test_result/2608-16753v1.md).
+
+The Markdown sample demonstrates an end-to-end extraction rather than only a provider response: it contains structured sections such as the abstract, study objectives, methods, questions, results, figure captions, and references. Extracted claims cite source markers (for example, `[S1]`), and uncertain passages are explicitly marked. This makes the sample useful for reviewing readability, structure, source linking, and uncertainty handling against the original PDF.
+
+Two different instructions were evaluated without changing application code:
+
+| Instruction | Pages processed | Duration | Items | Evidence references verified | Warnings |
+|---|---:|---:|---:|---:|---:|
+| Full-content extraction | 13/13 | 243.62 s | 84 | 76/89 (85.4%) | 13 |
+| Focused argument extraction | 13/13 | 106.71 s | 65 | 52/69 (75.4%) | 19 |
+
+Both runs passed schema and Markdown checks and processed every page, but ended with `completed_with_warnings`. The warnings included evidence excerpts that could not be matched automatically to the PDF text layer; the focused run also had two items without evidence. Eight manually checked facts per run matched the source and cited the expected pages (8/8 in each run). This is a small spot-check, not a document-wide accuracy or completeness score. See the [detailed OpenRouter test report](test_result/TEST_RESULT_OPENROUTER.md) for run IDs, instructions, methodology, metrics, and limitations.
+
+This PDF contains prose and conceptual figures, but no numeric charts, tables, forms, or checkboxes were available to test. No PNG/JPG sample was present, so the image-input requirement remains unevaluated with a live model. The design trade-off favors auditable, evidence-linked output: strict text-layer matching can flag a valid excerpt as unverified when line wrapping or image-only content differs from extracted text. The application also accepts page-cache and cross-page table-merge options that are not implemented and do not affect results.
+
 ## API Overview
 
 The API is served under `/api`:

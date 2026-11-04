@@ -24,18 +24,7 @@ API lokal tidak memiliki autentikasi; gunakan hanya di lingkungan lokal tepercay
 - Fake provider hanya memvalidasi alur integrasi; hasilnya bukan ukuran akurasi ekstraksi model.
 - Run store hanya berada di memori dan tidak ada database atau riwayat persisten.
 - Cache halaman dan penggabungan tabel lintas halaman belum diimplementasikan; opsi terkait belum mengubah hasil.
-- Evaluasi pada dokumen sampel asli dan validasi akurasi provider tetap perlu dilakukan terpisah.
-
-## Evaluasi OpenRouter
-
-Pengujian langsung pada `test_file/2608.16753v1.pdf` menggunakan OpenRouter `google/gemini-3-flash-preview`:
-
-| Instruksi | Halaman selesai | Durasi | Item | Referensi terverifikasi | Peringatan |
-|---|---:|---:|---:|---:|---:|
-| Ekstraksi seluruh konten | 13/13 | 243,62 dtk | 84 | 76/89 (85,4%) | 13 |
-| Argumen utama | 13/13 | 106,71 dtk | 65 | 52/69 (75,4%) | 19 |
-
-Kedua run lolos pemeriksaan schema dan format Markdown serta memproses seluruh halaman, tetapi berstatus `completed_with_warnings` karena kutipan evidence tidak cocok dengan text layer; run kedua juga memiliki dua item tanpa evidence. Delapan fakta yang diperiksa manual pada setiap run cocok dengan sumber dan halaman referensinya. Skor spot-check tersebut bukan ukuran akurasi atau kelengkapan seluruh dokumen. Sampel gambar PNG/JPG kedua tidak tersedia; tabel, chart numerik, form, dan checkbox tidak terdapat pada PDF ini sehingga belum teruji langsung. Trade-off desainnya adalah validasi evidence yang ketat demi auditabilitas, yang dapat menandai kutipan valid sebagai belum terverifikasi akibat perbedaan format teks. Detail prompt, metrik, kegagalan, keterbatasan, dan trade-off tersedia di [`test_result/TEST_RESULT_OPENROUTER.md`](test_result/TEST_RESULT_OPENROUTER.md).
+- Evaluasi model langsung masih terbatas pada sampel PDF yang dijelaskan di `DOC.md`; sampel PNG/JPG dan ekstraksi tabel, chart numerik, form, serta checkbox belum diuji langsung.
 
 ## Aturan wajib sebelum coding
 
