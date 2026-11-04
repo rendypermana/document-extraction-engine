@@ -1,4 +1,0 @@
-﻿{
-  "providers": 2,
-  "createError": "ReferenceError: DEMO_FILE is not defined\nReferenceError: DEMO_FILE is not defined\n    at Module.createRun (http://127.0.0.1:8000/js/api.js:117:26)\n    at async pptr:evaluate;file%3A%2F%2F%2FC%3A%2FUsers%2Frendy%2FDownloads%2FTEST%2520DOCUMENT%2Fdocument-extraction-engine%2Fscripts%2Fdiag3.mjs%3A12%3A26:11:21"
-}
