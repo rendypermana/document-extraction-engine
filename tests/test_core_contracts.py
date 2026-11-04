@@ -162,7 +162,6 @@ def test_settings_defaults_match_env_example(monkeypatch) -> None:
         "REQUESTS_PER_MINUTE",
         "MAX_RETRIES",
         "PROVIDER_TIMEOUT_S",
-        "CACHE_ENABLED",
         "RENDER_DPI",
         "MAX_UPLOAD_MB",
         "MAX_IMAGE_PIXELS",
@@ -188,8 +187,9 @@ def test_settings_defaults_match_env_example(monkeypatch) -> None:
     assert settings.requests_per_minute == 15
     assert settings.max_retries == 3
     assert settings.provider_timeout_s == 60
-    assert settings.cache_enabled is False
     assert settings.render_dpi == 150
+    assert settings.ocr_enabled
+    assert settings.ocr_language == "eng"
     assert settings.max_upload_mb == 20
     assert settings.max_image_pixels == 40_000_000
     assert settings.host == "0.0.0.0"

@@ -109,7 +109,7 @@ The manual check was **2/2** facts in the first run and **3/3** claims returned 
 - The parser, evidence validator, aggregator, and renderer are separate from provider adapters. Evidence validation compares excerpts with PDF text blocks; line wrapping or hyphenation can cause a false negative, as with one excerpt in the second run that was supported during manual inspection but failed automatic verification.
 - The design favors structured output, auditable references, and explicit uncertainty. This improves transparency, but an automatic warning does not always mean a claim is false. Conversely, valid schema and Markdown do not prove that every page succeeded or that the content is complete.
 - The application maps HTTP 413 to `provider_capability` and quota restrictions to `provider_rate_limit`. Since Groq returned both error types, the partial runs were not represented as full successes.
-- Page caching and cross-page table aggregation options are not implemented; enabling or disabling them would not change these run results.
+- At the time of these runs, page-cache and cross-page table-aggregation options were accepted but inert. The UI controls have since been removed, and the API now rejects legacy requests that enable either option.
 
 ## Limitations and Conclusion
 

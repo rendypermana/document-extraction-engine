@@ -6,12 +6,13 @@ import warnings
 from io import BytesIO
 from math import sqrt
 
+import pymupdf
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from app.config import Settings, get_settings
 from app.core.errors import DocumentLoadError
 from app.core.schemas import LoadedDocument, Page
-from app.loaders.common import validate_file_input
+from app.loaders.common import extract_ocr_text_blocks, validate_file_input
 
 _SUPPORTED_IMAGE_FORMATS = {
     "image/png": "PNG",
@@ -89,6 +90,23 @@ class ImageLoader:
             raise DocumentLoadError("The image file could not be read.") from exc
 
         image_bytes = output.getvalue()
+        text_blocks = None
+        text_source = "none"
+        ocr_error = None
+        if self._settings.ocr_enabled:
+            page_width = normalized.width * 72 / self._settings.render_dpi
+            page_height = normalized.height * 72 / self._settings.render_dpi
+            with pymupdf.open() as document:
+                ocr_page = document.new_page(width=page_width, height=page_height)
+                ocr_page.insert_image(ocr_page.rect, stream=image_bytes)
+                text_blocks, ocr_error = extract_ocr_text_blocks(
+                    ocr_page,
+                    1,
+                    self._settings,
+                )
+            if text_blocks:
+                text_source = "ocr"
+
         return LoadedDocument(
             filename=filename,
             source_kind="image",
@@ -99,7 +117,9 @@ class ImageLoader:
                     height_px=normalized.height,
                     image=image_bytes,
                     image_mime="image/png",
-                    text_blocks=None,
+                    text_blocks=text_blocks,
+                    text_source=text_source,
+                    ocr_error=ocr_error,
                 )
             ],
         )

@@ -41,7 +41,10 @@ class MarkdownRenderer:
         if references:
             for reference in references:
                 excerpt = self._escape_inline(reference.excerpt)
-                verified = self._verification_label(reference.verified)
+                verified = self._verification_label(
+                    reference.verified,
+                    reference.verification_source,
+                )
                 lines.append(f"- [{reference.id}] Page {reference.page} — {verified}: “{excerpt}”")
         else:
             lines.append("No source references.")
@@ -67,6 +70,7 @@ class MarkdownRenderer:
                     bbox=evidence.bbox,
                     excerpt=evidence.excerpt,
                     verified=evidence.verified,
+                    verification_source=evidence.verification_source,
                     item_status=item.status,
                     is_estimate=item.is_estimate,
                 )
@@ -169,10 +173,17 @@ class MarkdownRenderer:
         return labels[status]
 
     @staticmethod
-    def _verification_label(verified: bool | None) -> str:
+    def _verification_label(
+        verified: bool | None,
+        verification_source: str | None,
+    ) -> str:
         if verified is True:
+            if verification_source == "ocr_text":
+                return "matched OCR text (OCR may contain errors)"
             return "verified"
         if verified is False:
+            if verification_source == "ocr_text":
+                return "not found in OCR text"
             return "not found in text layer"
         return "not automatically verifiable"
 

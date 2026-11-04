@@ -1,109 +1,195 @@
 # Document Extraction Engine
 
-Repositori ini menggunakan dokumentasi di [`docs/`](docs/) sebagai **source of truth** untuk seluruh pekerjaan desain, implementasi, pengujian, dan review. Jangan mulai coding hanya berdasarkan asumsi, isi issue, atau kondisi kode saat ini.
+A local, model-agnostic application that extracts structured information from PDF documents and PNG/JPG images. It turns user instructions and document pages into evidence-backed Markdown, while making uncertainty and processing failures visible.
 
-## Jalankan aplikasi
+## Features
 
-Siapkan `.env` dari template bila belum ada. Atur provider ke `fake` untuk menguji seluruh alur tanpa API key; provider live membutuhkan key dan model yang sesuai di `.env`.
+- Accepts PDF, PNG, and JPG uploads.
+- Processes PDF documents page by page.
+- Supports configurable extraction instructions and domain profiles, including general documents, research papers, and tax forms.
+- Connects to Gemini, Groq, or OpenRouter through provider adapters; a fake provider is available for offline integration testing.
+- Requests structured JSON from the model, validates the response, checks available evidence, and renders Markdown in application code.
+- Displays source references, page progress, warnings, and page-level failures.
+- Provides a browser interface and a FastAPI API from the same application.
+
+## How It Works
+
+1. The user uploads a document and selects extraction instructions, a domain, and an available provider.
+2. A loader validates the file and turns it into pages with text-layer content and rendered images.
+3. The extraction pipeline builds a schema-guided request for each page and sends it to the configured provider.
+4. The response is parsed and validated. Evidence is checked against the text layer when one is available.
+5. The application assembles page results and renders Markdown with source references and uncertainty markers.
+
+The model does not generate the final Markdown directly. The application validates structured output and renders the result.
+
+## Requirements
+
+- Docker and Docker Compose for the recommended setup.
+- A provider API key and a model configured in `.env` for live extraction.
+
+The `fake` provider can be used without an API key to exercise the application flow. It is not an AI model and does not measure extraction accuracy.
+
+## Quick Start
+
+Create a local environment file from the example if needed:
 
 ```powershell
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+```
+
+Edit `.env` and configure the provider, model, and API key. For example:
+
+```env
+PROVIDER=groq
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=openai/gpt-oss-120b
+GROQ_VISION=false
+GROQ_STRUCTURED_OUTPUT=true
+```
+
+Then build and start the application:
+
+```powershell
 docker compose up --build
 ```
 
-Buka <http://localhost:8000>. UI dan API FastAPI berjalan pada satu origin; health check tersedia di `/api/health`. Compose memasukkan nilai `.env` ke container saat runtime, sedangkan `.env` dikecualikan dari build context dan tidak disalin ke image.
+Open [http://localhost:8000](http://localhost:8000). The API health check is available at [http://localhost:8000/api/health](http://localhost:8000/api/health).
 
-Run dan hasil hanya disimpan sementara di memori dan hilang saat container dimulai ulang; tidak ada database permanen. Berkas unggahan sementara dihapus setelah diproses. Provider `fake` hanya menguji integrasi dan bukan model AI atau ukuran akurasi. Kontrak endpoint ada di [`docs/API.md`](docs/API.md), dan konfigurasi provider ada di [`docs/PROVIDERS.md`](docs/PROVIDERS.md).
+To apply `.env` changes, recreate the service:
 
-Perubahan kode atau aset memerlukan rebuild dengan `docker compose up --build`. Perubahan nilai `.env` diterapkan dengan menjalankan `docker compose up -d`, yang akan membuat ulang container bila konfigurasinya berubah. Hentikan layanan dengan `docker compose down`.
+```powershell
+docker compose up -d
+```
 
-API lokal tidak memiliki autentikasi; gunakan hanya di lingkungan lokal tepercaya dan jangan diekspos ke jaringan publik.
+To stop the application:
 
-## Batasan yang diketahui
+```powershell
+docker compose down
+```
 
-- Fake provider hanya memvalidasi alur integrasi; hasilnya bukan ukuran akurasi ekstraksi model.
-- Run store hanya berada di memori dan tidak ada database atau riwayat persisten.
-- Cache halaman dan penggabungan tabel lintas halaman belum diimplementasikan; opsi terkait belum mengubah hasil.
-- Evaluasi model langsung masih terbatas pada sampel PDF yang dijelaskan di `DOC.md`; pengujian Groq yang hanya memproses sebagian PDF, pengujian Gemini yang gagal karena rate limit, serta ketiadaan sampel PNG/JPG dan pengujian tabel, chart numerik, form, serta checkbox juga dicatat di sana.
+## Available Providers
 
-## Aturan wajib sebelum coding
+The application currently supports these providers:
 
-Untuk setiap tugas:
+- **Gemini** (`gemini`)
+- **Groq** (`groq`)
+- **OpenRouter** (`openrouter`)
+- **Fake** (`fake`) — deterministic integration testing only; it is not an AI model.
 
-1. Baca [`docs/PLAN.md`](docs/PLAN.md) untuk memastikan milestone dan scope yang aktif.
-2. Baca dokumen yang relevan dari matriks di bawah.
-3. Periksa kode dan tes yang akan terdampak.
-4. Bandingkan rencana perubahan dengan seluruh kontrak terkait di `docs/`.
-5. Jika ada pertentangan antara permintaan, dokumentasi, kode, atau tes, **hentikan implementasi dan minta klarifikasi**. Jangan memilih interpretasi sendiri dan jangan mengubah kontrak secara diam-diam.
-6. Setelah perubahan selesai, periksa kembali dokumen terkait, jalankan verifikasi yang relevan, lalu perbarui dokumentasi apabila perubahan kontrak memang telah disetujui.
+Live provider availability depends on the corresponding API key and model being configured. `PROVIDER` in `.env` sets the default provider. The UI can also select another configured, available provider for an individual run.
 
-> Prinsip utama: kode harus mengikuti dokumentasi. Kondisi kode yang berbeda dari dokumentasi adalah konflik yang harus dilaporkan, bukan preseden untuk mengabaikan dokumentasi.
+### Provider Configuration
 
-## Peta source of truth
+Provider-specific keys and model IDs are configured in `.env`; do not commit that file or paste API keys into source code, logs, screenshots, or chat.
 
-| Dokumen | Menjadi acuan untuk |
-|---|---|
-| [`docs/SPEC.md`](docs/SPEC.md) | kebutuhan, perilaku produk, scope, dan batasan |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | struktur modul, tanggung jawab, aliran data, dan arah dependensi |
-| [`docs/SCHEMAS.md`](docs/SCHEMAS.md) | model data, status, validasi, dan kontrak schema |
-| [`docs/API.md`](docs/API.md) | endpoint, request/response, error, polling, dan integrasi UI |
-| [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) | seluruh keputusan visual, interaksi, responsivitas, dan aksesibilitas frontend |
-| [`docs/PROMPTS.md`](docs/PROMPTS.md) | komposisi prompt, keluaran model, domain guidance, dan prompt-injection defense |
-| [`docs/TESTING.md`](docs/TESTING.md) | strategi tes, test matrix, perintah verifikasi, dan release gate |
-| [`docs/EVALUATION.md`](docs/EVALUATION.md) | ground truth, metrik, prosedur evaluasi, dan analisis kegagalan |
-| [`docs/TECH_STACK_DECISIONS.md`](docs/TECH_STACK_DECISIONS.md) | pilihan teknologi dan alasan/trade-off di baliknya |
-| [`docs/PLAN.md`](docs/PLAN.md) | milestone, urutan implementasi, dependensi, blocker, dan status pekerjaan |
-| [`docs/AGENTS.md`](docs/AGENTS.md) | aturan kerja khusus untuk AI coding assistant |
+| Provider | Required settings | Notes |
+|---|---|---|
+| Gemini | `GEMINI_API_KEY`, `MODEL_NAME` | Supports image input and structured output, subject to model access and quota. |
+| Groq | `GROQ_API_KEY`, `GROQ_MODEL` | `GROQ_VISION` and `GROQ_STRUCTURED_OUTPUT` must match the selected model's capabilities. |
+| OpenRouter | `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` | `OPENROUTER_VISION` and `OPENROUTER_STRUCTURED_OUTPUT` must match the selected model and endpoint. |
+| Fake | None | Deterministic local integration provider; not suitable for evaluating model quality. |
 
-Dokumen yang relevan harus dibaca **utuh**, bukan hanya judul atau cuplikannya. Perubahan frontend selalu wajib membaca `SPEC.md`, `ARCHITECTURE.md`, `API.md`, `SCHEMAS.md`, dan `DESIGN_SYSTEM.md` selain `PLAN.md`.
+Set the capability flags to match the selected model. Check the provider's current documentation and account dashboard for model availability, supported features, quotas, and pricing.
 
-## Hierarki ketika sumber bertentangan
+### Vision and Text-Only Models
 
-Gunakan urutan otoritas berikut:
+When a provider is configured without vision, the application sends the page's extracted text rather than its rendered image. Local OCR can provide text for scanned pages, but text-only models still cannot interpret visual-only content such as charts. Choose a vision-capable model for documents where visual structure matters.
 
-1. Brief atau requirement asli yang disetujui pengguna.
-2. `docs/SPEC.md`.
-3. Schema aktual yang telah disetujui dan kontrak di `docs/SCHEMAS.md`.
-4. `docs/ARCHITECTURE.md` dan `docs/API.md`.
-5. Dokumen domain khusus yang relevan, seperti `docs/DESIGN_SYSTEM.md`, `docs/PROMPTS.md`, `docs/TESTING.md`, dan `docs/EVALUATION.md`.
-6. `docs/TECH_STACK_DECISIONS.md` sebagai catatan alasan keputusan.
-7. `docs/PLAN.md` sebagai status dan urutan kerja.
+The loaders run local Tesseract OCR on image uploads and PDF pages that have no digital text layer. The Docker image includes Tesseract and English/Indonesian language data; local installs need Tesseract and the selected language data installed separately. Set `OCR_ENABLED=false` to disable OCR, or set `OCR_LANGUAGE` to installed Tesseract language codes joined with `+` (for example `ind+eng`; the application default is `eng`). OCR text and normalized page coordinates are supplied to the model for evidence matching, but matching an OCR excerpt is labeled as an OCR-text match because OCR can misread the original image. The page image is still sent to vision-capable models, and OCR does not replace visual analysis for charts or layout.
 
-Hierarki ini membantu menemukan sumber konflik, tetapi **tidak memberikan izin untuk menyelesaikan konflik secara sepihak**. Laporkan dokumen/bagian yang bertentangan, dampaknya, dan keputusan yang diperlukan.
+## OpenRouter Evaluation
 
-## Checklist pemeriksaan konflik
+A live sample evaluation was run with OpenRouter using `google/gemini-3-flash-preview` and the research-paper domain. The test input was the 13-page PDF at [`test_file/2608.16753v1.pdf`](test_file/2608.16753v1.pdf). The requested path `test_file/2608-16753v1.pdf` is not the current filename in the repository; the existing PDF filename uses a period after `2608`. The extracted Markdown sample is available at [`test_result/2608-16753v1.md`](test_result/2608-16753v1.md).
 
-Sebelum menulis kode:
+The Markdown sample demonstrates an end-to-end extraction rather than only a provider response: it contains structured sections such as the abstract, study objectives, methods, questions, results, figure captions, and references. Extracted claims cite source markers (for example, `[S1]`), and uncertain passages are explicitly marked. This makes the sample useful for reviewing readability, structure, source linking, and uncertainty handling against the original PDF.
 
-- [ ] Tugas berada dalam milestone aktif dan tidak melampaui scope.
-- [ ] Perilaku yang diminta sesuai dengan `SPEC.md`.
-- [ ] Penempatan kode dan dependensi sesuai dengan `ARCHITECTURE.md`.
-- [ ] Model data dan status sesuai dengan `SCHEMAS.md`.
-- [ ] Endpoint dan payload sesuai dengan `API.md`.
-- [ ] Perubahan UI sesuai dengan seluruh release gate di `DESIGN_SYSTEM.md`.
-- [ ] Prompt, evaluasi, dan tes mengikuti dokumen domain masing-masing.
-- [ ] Tidak ada kontradiksi antara dokumentasi, kode, tes, dan permintaan pengguna.
+Two different instructions were evaluated without changing application code:
 
-Sebelum menyatakan pekerjaan selesai:
+| Instruction | Pages processed | Duration | Items | Evidence references verified | Warnings |
+|---|---:|---:|---:|---:|---:|
+| Full-content extraction | 13/13 | 243.62 s | 84 | 76/89 (85.4%) | 13 |
+| Focused argument extraction | 13/13 | 106.71 s | 65 | 52/69 (75.4%) | 19 |
 
-- [ ] Tes dan pemeriksaan kualitas yang relevan telah dijalankan.
-- [ ] Perubahan telah dibandingkan ulang dengan dokumen terkait.
-- [ ] Tidak ada kontrak publik yang berubah tanpa persetujuan dan pembaruan dokumentasi.
-- [ ] Keterbatasan, konflik, atau verifikasi yang belum dapat dilakukan dilaporkan dengan jujur.
-- [ ] `docs/PLAN.md` diperbarui bila status milestone atau pekerjaan berubah.
+Both runs passed schema and Markdown checks and processed every page, but ended with `completed_with_warnings`. The warnings included evidence excerpts that could not be matched automatically to the PDF text layer; the focused run also had two items without evidence. Eight manually checked facts per run matched the source and cited the expected pages (8/8 in each run). This is a small spot-check, not a document-wide accuracy or completeness score. See the [detailed OpenRouter test report](test_result/TEST_RESULT_OPENROUTER.md) for run IDs, instructions, methodology, metrics, and limitations.
 
-## Aturan untuk perubahan dokumentasi
+This PDF contains prose and conceptual figures, but no numeric charts, tables, forms, or checkboxes were available to test. No PNG/JPG sample was present, so the image-input requirement remains unevaluated with a live model. The design trade-off favors auditable, evidence-linked output: strict text-layer matching can flag a valid excerpt as unverified when line wrapping or image-only content differs from extracted text.
 
-- Jangan mengubah dokumentasi hanya untuk membenarkan implementasi yang sudah terlanjur berbeda.
-- Perubahan requirement atau kontrak harus disetujui terlebih dahulu, lalu diperbarui pada semua dokumen yang terdampak.
-- Hindari menduplikasi detail panjang ke README ini. Detail normatif tetap berada di dokumen pemilik domain dalam `docs/`.
-- Jika suatu keputusan belum terdokumentasi, tandai sebagai keputusan terbuka dan minta arahan sebelum mengimplementasikannya.
+## Groq Evaluation
 
-## Format laporan setelah mengerjakan tugas
+A live Groq evaluation used the configured model `openai/gpt-oss-120b` on the same 13-page research-paper sample, [`test_file/2608.16753v1.pdf`](test_file/2608.16753v1.pdf). Groq was selected for each run through the API; the application's `.env` default provider was not changed. The model was configured with structured output enabled and vision disabled.
 
-Setiap hasil pekerjaan minimal menyebutkan:
+**Account tier note:** These Groq runs used free-tier access. The observed rate-limit failures should therefore be interpreted in the context of free-tier quotas, which can vary by account and change over time. The HTTP 413 responses were also observed; this evaluation does not establish that they were caused by the account tier.
 
-1. file dan perilaku yang berubah;
-2. dokumen source of truth yang diperiksa;
-3. tes atau verifikasi yang dijalankan beserta hasilnya;
-4. konflik, asumsi, keterbatasan, atau bagian yang belum diverifikasi.
+Two extraction instructions were tested without changing application code: one requested exhaustive text-layer extraction, and the other focused on the paper's central question, claims, recommendations, and conclusion. Both runs returned structured Markdown, but neither completed the document. Each processed **1 of 13 pages** and recorded **12 page errors**. Six errors in the full-content run and nine in the focused run were HTTP 413 capability errors; the remaining six and three errors, respectively, were Groq rate limits.
+
+| Instruction | Pages completed | Duration | Items | Evidence verified | Page errors |
+|---|---:|---:|---:|---:|---:|
+| Full-content extraction | 1/13 | 23.57 s | 2 | 2/2 (100%) | 12 |
+| Focused argument | 1/13 | 13.59 s | 3 | 2/3 (66.7%) | 12 |
+
+Both runs had valid schema and Markdown according to application metadata, but ended with `completed_with_warnings` and `all_pages_processed=false`. The first run returned the paper title and author, both supported by verified page-1 excerpts. The focused run returned three claims from page 1. All three claims were manually checked against the PDF and were substantively supported; two excerpts matched the text layer automatically, while the third was marked `evidence_not_found`. That mismatch illustrates the trade-off of strict text-block matching: line wrapping or hyphenation can cause a valid passage to be flagged for manual review.
+
+These results show that Groq produced a small, evidence-backed extraction from the first page, but they do **not** establish PDF-wide accuracy or completeness. The short run durations are not comparable as full-document throughput because 12 pages failed in each run. Input/output token counts and provider billing cost were unavailable in the run metadata.
+
+The supplied sample directory contained no PNG/JPG image, and this Groq configuration does not support vision. Visual-only content therefore could not be tested. The partial runs also provide no reliable coverage evidence for tables, numeric charts, form fields, or checkboxes.
+
+The detailed prompts, run IDs, source checks, error breakdown, metrics, and scope assessment are available in the [Groq test report](test_result/TEST_RESULT_GROQ.md).
+
+## Gemini Evaluation
+
+A live evaluation used Gemini `gemini-3.5-flash` with vision and structured output enabled on [`test_file/2608.16753v1.pdf`](test_file/2608.16753v1.pdf). Two different extraction instructions were submitted through the application without changing code: one requested all readable content, and the other focused on the paper's main argument and recommendations.
+
+**Account tier note:** These Gemini runs used free-tier access. The observed rate-limit failures should be interpreted in the context of free-tier quotas and request limits, which can vary by account and change over time; the test does not establish that the model or application would behave the same under paid-tier limits.
+
+Neither run successfully extracted any page. Both processed **0 of 13 pages**, returned zero items and zero source references, and ended with `completed_with_warnings`. All 13 page requests in each run failed with Gemini rate-limit errors, despite 39 retries per run. Each attempt took approximately three minutes:
+
+| Instruction | Pages completed | Duration | Items | Page errors | Retries |
+|---|---:|---:|---:|---:|---:|
+| Full-content extraction | 0/13 | 189.04 s | 0 | 13 rate limits | 39 |
+| Focused argument | 0/13 | 187.30 s | 0 | 13 rate limits | 39 |
+
+Schema and Markdown checks reported true, but `all_pages_processed=false`. This is a useful reliability observation: a structurally valid empty result is not evidence that extraction succeeded. Since the model returned no facts or references, extraction accuracy and evidence-match rate could not be calculated. Several source facts were manually confirmed in the PDF, but there were no Gemini answers to score against them.
+
+The configured Gemini capability includes vision, but these failed runs do not demonstrate image extraction. The only supplied sample was the PDF; no PNG/JPG image was present. Tables, numeric charts, form fields, and checkboxes were therefore not evaluated. Token usage and provider billing cost were also unavailable.
+
+The observed provider failure was consistently reported as a rate limit; the test does not establish whether the underlying cause was request rate, account quota, billing, or model access. The detailed prompts, source checks, run IDs, metrics, and limitations are documented in the [Gemini test report](test_result/TEST_RESULT_GEMINI.md).
+
+## API Overview
+
+The API is served under `/api`:
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/api/health` | Health check |
+| `GET` | `/api/providers` | Provider availability and capabilities |
+| `GET` | `/api/domains` | Available extraction profiles |
+| `POST` | `/api/extract` | Upload a document and create an extraction run |
+| `GET` | `/api/runs/{run_id}` | Poll run progress and retrieve results |
+| `GET` | `/api/runs/{run_id}/markdown` | Download the Markdown result |
+
+Requests use multipart form data for document uploads. Extraction runs are asynchronous: create a run, poll its status until it is complete, then retrieve or download the Markdown result. Invalid inputs and unavailable providers are reported as API errors; page-level provider failures are included in run results.
+
+## Development and Tests
+
+The application is implemented in Python with FastAPI. Automated tests use local fixtures and mocked providers; the default suite does not require a live API key.
+
+```powershell
+pytest
+```
+
+The UI and API use a single origin. For local development outside Docker, install dependencies from `requirements.txt` and start the application with:
+
+```powershell
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+## Current Limitations
+
+- Run state and results are stored in memory and are lost when the application restarts. There is no persistent database.
+- Uploaded temporary files are removed after processing.
+- Page caching and cross-page table merging are not implemented and their controls have been removed from the UI. For backward compatibility, the API accepts the legacy `use_cache` and `aggregate` fields, but requests that set either to `true` receive an `unsupported_option` error asking the user to reload the page. Static UI assets are served with `Cache-Control: no-cache` to reduce stale-page issues.
+- A successful model response does not guarantee accurate extraction. Validate results against the source document, especially tables, charts, and ambiguous text.
+- Provider access, supported models, quotas, rate limits, and pricing depend on the provider account and may change.
+- The local API has no authentication. Do not expose it to untrusted networks.
+- Required-sample evaluations and extraction-quality ground truth are separate from automated integration tests. Do not treat fake-provider tests as model-quality evidence.
+

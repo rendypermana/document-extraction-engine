@@ -98,7 +98,7 @@ The following eight facts were checked against the PDF text and figure captions.
 - Only one sample was present. The required second PNG/JPG sample and its live-provider evaluation remain outstanding.
 - The eight manually checked facts establish a small precision spot-check only. They do not measure exhaustive completeness, omitted content, table-cell accuracy, chart-value accuracy, or overall recall.
 - The two runs consumed 299,491 input and 47,353 output tokens in total. The focused prompt was faster and emitted fewer items, but a smaller output is not evidence that it is more accurate or complete.
-- The application accepts cache and cross-page table-aggregation options, but those options are not implemented and do not affect these runs. This paper has no tables, so table aggregation was not material to this result.
+- At the time of these runs, page-cache and cross-page table-aggregation options were accepted but inert. The UI controls have since been removed, and the API now rejects legacy requests that enable either option. This paper has no tables, so table aggregation was not material to this result.
 - The system favors structured, evidence-linked output and explicit uncertainty over silently accepting every model claim. This improves auditability but can mark legitimate content uncertain when source-text matching is strict.
 
 ## Conclusion

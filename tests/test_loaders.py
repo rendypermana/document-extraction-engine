@@ -54,6 +54,7 @@ def test_pdf_loader_reads_each_page_and_normalizes_text_block_bounds() -> None:
     assert document.pages[1].number == 2
     assert document.pages[0].image_mime == "image/png"
     assert document.pages[0].text_blocks
+    assert document.pages[0].text_source == "digital"
     assert document.pages[0].text_blocks[0].text == "Evidence page 1"
     x0, y0, x1, y1 = document.pages[0].text_blocks[0].bbox
     assert 0 <= x0 < x1 <= 1
@@ -88,6 +89,87 @@ def test_pdf_without_text_layer_uses_none() -> None:
     )
 
     assert page.text_blocks is None
+
+
+def test_pdf_loader_uses_ocr_for_pages_without_digital_text(monkeypatch) -> None:
+    class OCRTextPage:
+        def extractDICT(self):
+            return {
+                "blocks": [
+                    {
+                        "type": 0,
+                        "bbox": (20, 10, 100, 25),
+                        "lines": [{"spans": [{"text": "Scanned evidence"}]}],
+                    }
+                ]
+            }
+
+    monkeypatch.setattr(pymupdf.Page, "get_textpage_ocr", lambda *args, **kwargs: OCRTextPage())
+
+    page = PDFLoader(_settings(render_dpi=72)).load(
+        _pdf_bytes(with_text=False),
+        "scan.pdf",
+    ).pages[0]
+
+    assert page.text_source == "ocr"
+    assert page.text_blocks
+    assert page.text_blocks[0].text == "Scanned evidence"
+    assert page.ocr_error is None
+
+
+def test_image_loader_uses_ocr_and_reports_missing_tesseract(monkeypatch) -> None:
+    def missing_tesseract(*args, **kwargs):
+        raise RuntimeError("No tessdata specified and Tesseract is not installed")
+
+    monkeypatch.setattr(pymupdf.Page, "get_textpage_ocr", missing_tesseract)
+    page = ImageLoader(_settings()).load(
+        _image_bytes(),
+        "scan.png",
+    ).pages[0]
+
+    assert page.text_source == "none"
+    assert page.text_blocks is None
+    assert page.ocr_error == (
+        "OCR is unavailable: install Tesseract OCR and the configured language data."
+    )
+
+
+def test_image_loader_adds_ocr_text_blocks_when_available(monkeypatch) -> None:
+    class OCRTextPage:
+        def extractDICT(self):
+            return {
+                "blocks": [
+                    {
+                        "type": 0,
+                        "bbox": (1, 1, 7, 5),
+                        "lines": [{"spans": [{"text": "Printed label"}]}],
+                    }
+                ]
+            }
+
+    monkeypatch.setattr(pymupdf.Page, "get_textpage_ocr", lambda *args, **kwargs: OCRTextPage())
+    page = ImageLoader(_settings(render_dpi=72)).load(
+        _image_bytes(),
+        "scan.png",
+    ).pages[0]
+
+    assert page.text_source == "ocr"
+    assert page.text_blocks
+    assert page.text_blocks[0].text == "Printed label"
+
+
+def test_digital_pdf_does_not_run_ocr(monkeypatch) -> None:
+    def unexpected_ocr(*args, **kwargs):
+        raise AssertionError("digital text should not trigger OCR")
+
+    monkeypatch.setattr(pymupdf.Page, "get_textpage_ocr", unexpected_ocr)
+    page = PDFLoader(_settings(render_dpi=72)).load(
+        _pdf_bytes(),
+        "digital.pdf",
+    ).pages[0]
+
+    assert page.text_source == "digital"
+    assert page.text_blocks
 
 
 @pytest.mark.parametrize(

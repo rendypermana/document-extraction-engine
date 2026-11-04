@@ -17,8 +17,6 @@ export function createInitialState() {
     domainId: null,
     instructions: "",
     instructionsError: null,
-    useCache: true,
-    aggregate: true,
     run: null,
     runState: "idle",
     progress: null,

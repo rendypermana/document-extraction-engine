@@ -95,7 +95,9 @@ Set the capability flags to match the selected model. Check the provider's curre
 
 ### Vision and Text-Only Models
 
-When a provider is configured without vision, the application sends the page's extracted text rather than its rendered image. Text-only models therefore cannot reliably extract scanned pages without a text layer or interpret visual-only content such as charts. Choose a vision-capable model for those documents.
+When a provider is configured without vision, the application sends the page's extracted text rather than its rendered image. Local OCR can provide text for scanned pages, but text-only models still cannot interpret visual-only content such as charts. Choose a vision-capable model for documents where visual structure matters.
+
+The loaders run local Tesseract OCR on image uploads and PDF pages that have no digital text layer. The Docker image includes Tesseract and English/Indonesian language data; local installs need Tesseract and the selected language data installed separately. Set `OCR_ENABLED=false` to disable OCR, or set `OCR_LANGUAGE` to installed Tesseract language codes joined with `+` (for example `ind+eng`; the application default is `eng`). OCR text and normalized page coordinates are supplied to the model for evidence matching, but matching an OCR excerpt is labeled as an OCR-text match because OCR can misread the original image. The page image is still sent to vision-capable models, and OCR does not replace visual analysis for charts or layout.
 
 ## OpenRouter Evaluation
 
@@ -112,7 +114,7 @@ Two different instructions were evaluated without changing application code:
 
 Both runs passed schema and Markdown checks and processed every page, but ended with `completed_with_warnings`. The warnings included evidence excerpts that could not be matched automatically to the PDF text layer; the focused run also had two items without evidence. Eight manually checked facts per run matched the source and cited the expected pages (8/8 in each run). This is a small spot-check, not a document-wide accuracy or completeness score. See the [detailed OpenRouter test report](test_result/TEST_RESULT_OPENROUTER.md) for run IDs, instructions, methodology, metrics, and limitations.
 
-This PDF contains prose and conceptual figures, but no numeric charts, tables, forms, or checkboxes were available to test. No PNG/JPG sample was present, so the image-input requirement remains unevaluated with a live model. The design trade-off favors auditable, evidence-linked output: strict text-layer matching can flag a valid excerpt as unverified when line wrapping or image-only content differs from extracted text. The application also accepts page-cache and cross-page table-merge options that are not implemented and do not affect results.
+This PDF contains prose and conceptual figures, but no numeric charts, tables, forms, or checkboxes were available to test. No PNG/JPG sample was present, so the image-input requirement remains unevaluated with a live model. The design trade-off favors auditable, evidence-linked output: strict text-layer matching can flag a valid excerpt as unverified when line wrapping or image-only content differs from extracted text.
 
 ## Groq Evaluation
 
@@ -131,7 +133,7 @@ Both runs had valid schema and Markdown according to application metadata, but e
 
 These results show that Groq produced a small, evidence-backed extraction from the first page, but they do **not** establish PDF-wide accuracy or completeness. The short run durations are not comparable as full-document throughput because 12 pages failed in each run. Input/output token counts and provider billing cost were unavailable in the run metadata.
 
-The supplied sample directory contained no PNG/JPG image, and this Groq configuration does not support vision. Visual-only content therefore could not be tested. The partial runs also provide no reliable coverage evidence for tables, numeric charts, form fields, or checkboxes. The cache and cross-page table-merge options are accepted by the application but are not implemented, so they do not alter these results.
+The supplied sample directory contained no PNG/JPG image, and this Groq configuration does not support vision. Visual-only content therefore could not be tested. The partial runs also provide no reliable coverage evidence for tables, numeric charts, form fields, or checkboxes.
 
 The detailed prompts, run IDs, source checks, error breakdown, metrics, and scope assessment are available in the [Groq test report](test_result/TEST_RESULT_GROQ.md).
 
@@ -187,7 +189,7 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 - Run state and results are stored in memory and are lost when the application restarts. There is no persistent database.
 - Uploaded temporary files are removed after processing.
-- The UI options **Use page cache** and **Merge tables across pages** are accepted by the API but are not implemented yet; checking or unchecking them currently does not change extraction results.
+- Page caching and cross-page table merging are not implemented and their controls have been removed from the UI. For backward compatibility, the API accepts the legacy `use_cache` and `aggregate` fields, but requests that set either to `true` receive an `unsupported_option` error asking the user to reload the page. Static UI assets are served with `Cache-Control: no-cache` to reduce stale-page issues.
 - A successful model response does not guarantee accurate extraction. Validate results against the source document, especially tables, charts, and ambiguous text.
 - Provider access, supported models, quotas, rate limits, and pricing depend on the provider account and may change.
 - The local API has no authentication. Do not expose it to untrusted networks.

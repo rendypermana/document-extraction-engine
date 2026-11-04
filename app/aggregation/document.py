@@ -12,6 +12,7 @@ class DocumentAggregator:
         page_summaries = []
 
         for page in pages:
+            document_findings.extend(page.findings)
             for item in page.items:
                 document_items.append(
                     item.model_copy(

@@ -17,8 +17,10 @@ from app.core.pipeline import ExtractionPipeline
 from app.core.resilience import ResilientProvider
 from app.core.schemas import (
     DomainProfile,
+    Finding,
     ModelPageOutput,
     Page,
+    PageExtraction,
     PageMetrics,
     ProviderCapabilities,
     Status,
@@ -70,7 +72,7 @@ def _response(page_number: int, excerpt: str | None, text: str) -> str:
 
 
 def _pipeline(provider: Provider) -> ExtractionPipeline:
-    settings = Settings(_env_file=None, render_dpi=72)
+    settings = Settings(_env_file=None, render_dpi=72, ocr_enabled=False)
     return ExtractionPipeline(
         loader=LoaderRegistry(settings=settings),
         provider=provider,
@@ -435,6 +437,62 @@ def test_evidence_from_another_page_is_marked_unverified() -> None:
     assert output.document.items[0].status == Status.uncertain
     assert output.result.references[0].verified is False
     assert output.warnings[0].code == "evidence_page_not_found"
+
+
+def test_ocr_evidence_is_identified_as_ocr_matched_not_source_verified() -> None:
+    page = Page(
+        number=1,
+        width_px=100,
+        height_px=100,
+        image=b"png",
+        image_mime="image/png",
+        text_blocks=[{"id": "b1", "text": "Scanned evidence", "bbox": [0, 0, 1, 1]}],
+        text_source="ocr",
+    )
+    output = ModelPageOutput.model_validate(
+        json.loads(_response(1, "Scanned evidence", "Scanned evidence"))
+    )
+    metrics = PageMetrics(
+        latency_s=0,
+        attempts=1,
+        retries=0,
+        repaired=False,
+        cached=False,
+    )
+
+    validated = PageEvidenceValidator().validate(page, output, metrics)
+    rendered = MarkdownRenderer().render(DocumentAggregator().aggregate([validated]))
+
+    assert validated.items[0].status == Status.ok
+    assert validated.items[0].evidence[0].verified is True
+    assert validated.items[0].evidence[0].verification_source == "ocr_text"
+    assert "matched OCR text (OCR may contain errors)" in rendered.markdown
+
+
+def test_document_aggregation_preserves_page_level_ocr_findings() -> None:
+    finding = Finding(
+        code="ocr_unavailable",
+        severity="warning",
+        message="OCR is unavailable.",
+        page=1,
+    )
+    page = PageExtraction(
+        page=1,
+        status="done",
+        items=[],
+        findings=[finding],
+        page_notes=None,
+        error=None,
+        metrics=PageMetrics(
+            latency_s=0,
+            attempts=1,
+            retries=0,
+            repaired=False,
+            cached=False,
+        ),
+    )
+
+    assert DocumentAggregator().aggregate([page]).findings == [finding]
 
 
 def test_evidence_match_does_not_join_separate_text_blocks() -> None:

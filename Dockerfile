@@ -17,8 +17,16 @@ RUN node ./scripts/vendor-ui-libs.mjs \
 # Stage 2: runtime. Python only; no Node or frontend build tools.
 FROM python:3.12-slim AS runtime
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        tesseract-ocr \
+        tesseract-ocr-eng \
+        tesseract-ocr-ind \
+    && rm -rf /var/lib/apt/lists/*
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    OCR_ENABLED=true
 
 WORKDIR /app
 

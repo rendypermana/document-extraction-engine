@@ -8,8 +8,12 @@ import pymupdf
 
 from app.config import Settings, get_settings
 from app.core.errors import DocumentLoadError, UnsupportedInputError
-from app.core.schemas import LoadedDocument, Page, TextBlock
-from app.loaders.common import validate_file_input
+from app.core.schemas import LoadedDocument, Page
+from app.loaders.common import (
+    extract_digital_text_blocks,
+    extract_ocr_text_blocks,
+    validate_file_input,
+)
 
 
 class PDFLoader:
@@ -70,51 +74,25 @@ class PDFLoader:
                 f"Rendered PDF page {page_number} exceeds the configured pixel limit."
             )
 
+        text_blocks = extract_digital_text_blocks(page, page_number)
+        text_source = "digital" if text_blocks else "none"
+        ocr_error = None
+        if not text_blocks:
+            text_blocks, ocr_error = extract_ocr_text_blocks(
+                page,
+                page_number,
+                self._settings,
+            )
+            if text_blocks:
+                text_source = "ocr"
+
         return Page(
             number=page_number,
             width_px=pixmap.width,
             height_px=pixmap.height,
             image=pixmap.tobytes("png"),
             image_mime="image/png",
-            text_blocks=self._extract_text_blocks(page, page_number),
+            text_blocks=text_blocks,
+            text_source=text_source,
+            ocr_error=ocr_error,
         )
-
-    @staticmethod
-    def _extract_text_blocks(
-        page: pymupdf.Page,
-        page_number: int,
-    ) -> list[TextBlock] | None:
-        page_rect = page.rect
-        if page_rect.width <= 0 or page_rect.height <= 0:
-            raise DocumentLoadError(f"PDF page {page_number} has invalid dimensions.")
-
-        blocks: list[TextBlock] = []
-        text_page = page.get_text("dict", sort=True)
-        for block in text_page.get("blocks", []):
-            if block.get("type") != 0:
-                continue
-
-            lines = block.get("lines", [])
-            text = "\n".join(
-                "".join(span.get("text", "") for span in line.get("spans", [])) for line in lines
-            ).strip()
-            if not text:
-                continue
-
-            bounds = pymupdf.Rect(block["bbox"]) * page.rotation_matrix
-            x0 = max(0.0, min(1.0, (bounds.x0 - page_rect.x0) / page_rect.width))
-            y0 = max(0.0, min(1.0, (bounds.y0 - page_rect.y0) / page_rect.height))
-            x1 = max(0.0, min(1.0, (bounds.x1 - page_rect.x0) / page_rect.width))
-            y1 = max(0.0, min(1.0, (bounds.y1 - page_rect.y0) / page_rect.height))
-            if x1 <= x0 or y1 <= y0:
-                continue
-
-            blocks.append(
-                TextBlock(
-                    id=f"b{len(blocks) + 1}",
-                    text=text,
-                    bbox=(x0, y0, x1, y1),
-                )
-            )
-
-        return blocks or None

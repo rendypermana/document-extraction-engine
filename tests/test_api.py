@@ -31,7 +31,11 @@ def _png_bytes() -> bytes:
 
 
 def _settings(**overrides: object) -> Settings:
-    values: dict[str, object] = {"provider": "fake", "max_retries": 0}
+    values: dict[str, object] = {
+        "provider": "fake",
+        "max_retries": 0,
+        "ocr_enabled": False,
+    }
     values.update(overrides)
     return Settings(_env_file=None, **values)
 
@@ -106,11 +110,17 @@ def test_static_ui_is_served_from_the_same_application() -> None:
     with _client() as client:
         page = client.get("/")
         assert page.status_code == 200
+        assert page.headers["cache-control"] == "no-cache"
         assert '<html lang="en">' in page.text
         assert "Run extraction" in page.text
+        assert 'id="opt-cache"' not in page.text
+        assert 'id="opt-aggregate"' not in page.text
+        assert "Use page cache" not in page.text
+        assert "Merge tables across pages" not in page.text
 
         script = client.get("/js/api.js")
         assert script.status_code == 200
+        assert script.headers["cache-control"] == "no-cache"
         assert "FormData" in script.text
 
 
@@ -248,6 +258,23 @@ def test_framework_request_validation_message_is_indonesian() -> None:
     assert response.json()["error"] == {
         "code": "invalid_request",
         "message": "Invalid request.",
+    }
+
+
+@pytest.mark.parametrize("option", ["use_cache", "aggregate"])
+def test_unimplemented_processing_options_are_rejected(option: str) -> None:
+    with _client() as client:
+        response = client.post(
+            "/api/extract",
+            files={"file": ("sample.pdf", _pdf_bytes("x"), "application/pdf")},
+            data={"instructions": "Extract.", option: "true"},
+        )
+
+    assert response.status_code == 422
+    assert response.json()["error"] == {
+        "code": "unsupported_option",
+        "message": "The page is out of date. Reload it before starting a new extraction.",
+        "details": {"options": [option]},
     }
 
 

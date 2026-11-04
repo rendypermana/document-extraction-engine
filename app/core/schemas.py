@@ -153,6 +153,7 @@ class ModelPageOutput(ContractModel):
 class Evidence(ModelEvidence):
     verified: bool | None = None
     match_score: float | None = Field(default=None, ge=0, le=1)
+    verification_source: Literal["digital_text", "ocr_text"] | None = None
 
 
 class Finding(ContractModel):
@@ -198,6 +199,7 @@ class PageExtraction(ContractModel):
     page: int = Field(ge=1)
     status: Literal["done", "failed"]
     items: list[Item]
+    findings: list[Finding] = Field(default_factory=list)
     page_notes: str | None
     error: Issue | None
     metrics: PageMetrics
@@ -222,6 +224,8 @@ class Page(ContractModel):
     image: bytes
     image_mime: str
     text_blocks: list[TextBlock] | None
+    text_source: Literal["digital", "ocr", "none"] = "digital"
+    ocr_error: str | None = None
 
 
 class LoadedDocument(ContractModel):
@@ -322,6 +326,7 @@ class Reference(ContractModel):
     bbox: BBox | None = None
     excerpt: str
     verified: bool | None
+    verification_source: Literal["digital_text", "ocr_text"] | None = None
     item_status: Status
     is_estimate: bool
 

@@ -103,7 +103,7 @@ The manual inspection verifies that the ground-truth answers exist in the source
 - Provider logic is separated from parsing, evidence validation, aggregation, and Markdown rendering. This separation lets the application record provider failures independently from result validation.
 - The renderer and schema checks can produce a structurally valid empty result even when every page failed. Therefore, the `completed_with_warnings` status and `all_pages_processed` field must be considered together; passing Markdown/schema checks alone is not evidence of successful extraction.
 - The system favors structured output and auditable source references. In this evaluation that trade-off could not be assessed for quality because no provider response succeeded.
-- Page caching and cross-page table merging are accepted by the application but are not implemented and did not affect these runs.
+- At the time of these runs, page-cache and cross-page table-merging options were accepted but inert. The UI controls have since been removed, and the API now rejects legacy requests that enable either option.
 
 ## Failures, Limitations, and Conclusion
 

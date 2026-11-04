@@ -39,8 +39,6 @@ const dom = {
   instructions: el("instructions"),
   instructionsCount: el("instructions-count"),
   instructionsError: el("instructions-error"),
-  optCache: el("opt-cache"),
-  optAggregate: el("opt-aggregate"),
   runButton: el("run-button"),
   resetButton: el("reset-button"),
   downloadButton: el("download-button"),
@@ -249,8 +247,8 @@ function renderProgress() {
   for (const page of progress.pages ?? []) {
     const chip = document.createElement("li");
     chip.className = `${UI.pageChip.base} ${UI.pageChip[page.status] ?? UI.pageChip.pending}`;
-    chip.textContent = page.cached ? `P${page.page}*` : `P${page.page}`;
-    chip.title = `Page ${page.page}: ${page.status}${page.cached ? " (cached)" : ""}`;
+    chip.textContent = `P${page.page}`;
+    chip.title = `Page ${page.page}: ${page.status}`;
     dom.pageList.append(chip);
   }
 }
@@ -373,7 +371,6 @@ function renderMetadata() {
     ["Duration", formatDuration(metadata.duration_s)],
     ["Token usage", usageText],
     ["Retry", String(metadata.retries ?? 0)],
-    ["Cache hit", String(metadata.cache_hits ?? 0)],
     [
       "Pages",
       `${metadata.pages_processed ?? 0} / ${metadata.pages_total ?? 0} processed`,
@@ -483,8 +480,6 @@ async function startRun() {
       instructions: state.instructions,
       providerId: dom.provider.value,
       domainId: dom.domain.value,
-      useCache: dom.optCache.checked,
-      aggregate: dom.optAggregate.checked,
     });
     applyRunResponse({
       run_id: created.run_id,
@@ -657,14 +652,6 @@ dom.domain.addEventListener("change", () => {
 });
 
 dom.instructions.addEventListener("input", syncInstructions);
-
-dom.optCache.addEventListener("change", () => {
-  state = { ...state, useCache: dom.optCache.checked };
-});
-
-dom.optAggregate.addEventListener("change", () => {
-  state = { ...state, aggregate: dom.optAggregate.checked };
-});
 
 dom.runButton.addEventListener("click", () => {
   startRun();

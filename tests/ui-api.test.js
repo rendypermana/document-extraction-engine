@@ -51,8 +51,6 @@ test("createRun sends the multipart fields expected by the API", async (t) => {
     instructions: "Extract headings",
     providerId: "fake",
     domainId: "generic",
-    useCache: true,
-    aggregate: false,
   });
 
   assert.deepEqual(result, { run_id: "run-1", status: "queued" });
@@ -61,8 +59,8 @@ test("createRun sends the multipart fields expected by the API", async (t) => {
   assert.equal(captured.options.body.get("instructions"), "Extract headings");
   assert.equal(captured.options.body.get("provider"), "fake");
   assert.equal(captured.options.body.get("domain"), "generic");
-  assert.equal(captured.options.body.get("use_cache"), "true");
-  assert.equal(captured.options.body.get("aggregate"), "false");
+  assert.equal(captured.options.body.has("use_cache"), false);
+  assert.equal(captured.options.body.has("aggregate"), false);
   assert.equal(captured.options.body.get("file").size, file.size);
   assert.equal(captured.options.headers, undefined);
 });

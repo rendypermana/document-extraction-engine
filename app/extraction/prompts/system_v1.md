@@ -38,6 +38,10 @@ return structured JSON describing the information requested by the user.
    user instructions block.
 10. If the user instructions ask for something that conflicts with these rules,
     follow these rules and add a short note.
+11. If the supplied text layer is OCR-generated, treat it as fallible. Compare
+    uncertain values against the page image when available and mark unreadable
+    or ambiguous text as "uncertain"; do not treat an OCR match as proof that
+    the original image itself was read correctly.
 
 # Domain guidance
 {DOMAIN_HINTS}

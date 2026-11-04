@@ -82,8 +82,6 @@ export function createRun(form) {
   body.append("instructions", form.instructions);
   body.append("provider", form.providerId);
   body.append("domain", form.domainId);
-  body.append("use_cache", String(form.useCache));
-  body.append("aggregate", String(form.aggregate));
   return request("/extract", { method: "POST", body });
 }
 

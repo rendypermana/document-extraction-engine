@@ -96,6 +96,9 @@ class PageEvidenceValidator:
                         )
                     )
                 else:
+                    verification_source = (
+                        "ocr_text" if page.text_source == "ocr" else "digital_text"
+                    )
                     excerpt = self._normalize_text(model_evidence.excerpt)
                     verified = bool(
                         excerpt
@@ -122,6 +125,11 @@ class PageEvidenceValidator:
                         bbox=bbox,
                         verified=verified,
                         match_score=1.0 if verified else (0.0 if verified is False else None),
+                        verification_source=(
+                            verification_source
+                            if model_evidence.page == page.number and page.text_blocks
+                            else None
+                        ),
                     )
                 )
 

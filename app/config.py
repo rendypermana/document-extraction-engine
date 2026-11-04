@@ -32,9 +32,10 @@ class Settings(BaseSettings):
     requests_per_minute: int = Field(default=15, ge=1)
     max_retries: int = Field(default=3, ge=0)
     provider_timeout_s: float = Field(default=60, gt=0)
-    cache_enabled: bool = False
 
     render_dpi: int = Field(default=150, ge=1)
+    ocr_enabled: bool = True
+    ocr_language: str = Field(default="eng", min_length=3)
     max_upload_mb: int = Field(default=20, ge=1)
     max_image_pixels: int = Field(default=40_000_000, ge=1)
     max_instruction_chars: int = Field(default=10_000, ge=1)

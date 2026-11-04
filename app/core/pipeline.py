@@ -17,6 +17,7 @@ from app.core.interfaces import (
 )
 from app.core.schemas import (
     DomainProfile,
+    Finding,
     GenerationResponse,
     Issue,
     LoadedDocument,
@@ -163,6 +164,12 @@ class ExtractionPipeline:
         page_total: int,
     ) -> PageExtraction:
         if not self._provider.capabilities.vision and not page.text_blocks:
+            message = (
+                "This page has no readable text layer, and the configured provider does "
+                "not support image processing."
+            )
+            if page.ocr_error:
+                message = f"{message} {page.ocr_error}"
             return PageExtraction(
                 page=page.number,
                 status="failed",
@@ -172,11 +179,9 @@ class ExtractionPipeline:
                     code="page_unreadable",
                     scope="page",
                     page=page.number,
-                    message=(
-                        "This page has no text layer, and the configured provider does "
-                        "not support image processing."
-                    ),
+                    message=message,
                 ),
+                findings=self._ocr_findings(page),
                 metrics=PageMetrics(
                     latency_s=0,
                     attempts=0,
@@ -221,7 +226,10 @@ class ExtractionPipeline:
                     ) from error
 
             metrics = self._metrics(responses, repaired)
-            return self._validator.validate(page, output, metrics)
+            page_result = self._validator.validate(page, output, metrics)
+            return page_result.model_copy(
+                update={"findings": self._ocr_findings(page)}
+            )
         except ProviderAuthError:
             raise
         except ProviderError as error:
@@ -244,8 +252,22 @@ class ExtractionPipeline:
                     page=page.number,
                     message=error.message,
                 ),
+                findings=self._ocr_findings(page),
                 metrics=metrics,
             )
+
+    @staticmethod
+    def _ocr_findings(page: Page) -> list[Finding]:
+        if not page.ocr_error:
+            return []
+        return [
+            Finding(
+                code="ocr_unavailable",
+                severity="warning",
+                message=page.ocr_error,
+                page=page.number,
+            )
+        ]
 
     def _parse_page(self, response_text: str, expected_page: int) -> ModelPageOutput:
         output = self._parser.parse(response_text)

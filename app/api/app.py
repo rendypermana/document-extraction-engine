@@ -317,6 +317,13 @@ def create_app(
     api.state.settings = app_settings
     api.state.run_store = store
 
+    @api.middleware("http")
+    async def disable_static_asset_caching(request: Request, call_next):
+        response = await call_next(request)
+        if not request.url.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
     @api.exception_handler(ApiError)
     async def handle_api_error(_: Request, error: ApiError) -> JSONResponse:
         body = {"error": {"code": error.code, "message": error.message}}
@@ -397,13 +404,29 @@ def create_app(
         instructions: str | None = Form(default=None),
         provider: str | None = Form(default=None),
         domain: str | None = Form(default=None),
-        use_cache: bool = Form(default=True),
-        aggregate: bool = Form(default=True),
+        use_cache: bool = Form(default=False),
+        aggregate: bool = Form(default=False),
     ) -> RunCreated:
         form = await request.form()
         if instructions is None and "instructions" in form:
             instructions = ""
-        del use_cache, aggregate
+        unsupported_options = [
+            option
+            for option, requested in (
+                ("use_cache", use_cache),
+                ("aggregate", aggregate),
+            )
+            if requested
+        ]
+        if unsupported_options:
+            if file is not None:
+                await file.close()
+            raise ApiError(
+                422,
+                "unsupported_option",
+                "The page is out of date. Reload it before starting a new extraction.",
+                {"options": unsupported_options},
+            )
         if file is None:
             raise ApiError(400, "missing_field", "The 'file' field is required.")
         if instructions is None:
