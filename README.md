@@ -24,7 +24,7 @@ API lokal tidak memiliki autentikasi; gunakan hanya di lingkungan lokal tepercay
 - Fake provider hanya memvalidasi alur integrasi; hasilnya bukan ukuran akurasi ekstraksi model.
 - Run store hanya berada di memori dan tidak ada database atau riwayat persisten.
 - Cache halaman dan penggabungan tabel lintas halaman belum diimplementasikan; opsi terkait belum mengubah hasil.
-- Evaluasi model langsung masih terbatas pada sampel PDF yang dijelaskan di `DOC.md`; sampel PNG/JPG dan ekstraksi tabel, chart numerik, form, serta checkbox belum diuji langsung.
+- Evaluasi model langsung masih terbatas pada sampel PDF yang dijelaskan di `DOC.md`; pengujian Groq yang hanya memproses sebagian PDF serta ketiadaan sampel PNG/JPG dan pengujian tabel, chart numerik, form, serta checkbox juga dicatat di sana.
 
 ## Aturan wajib sebelum coding
 

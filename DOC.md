@@ -103,6 +103,25 @@ Both runs passed schema and Markdown checks and processed every page, but ended 
 
 This PDF contains prose and conceptual figures, but no numeric charts, tables, forms, or checkboxes were available to test. No PNG/JPG sample was present, so the image-input requirement remains unevaluated with a live model. The design trade-off favors auditable, evidence-linked output: strict text-layer matching can flag a valid excerpt as unverified when line wrapping or image-only content differs from extracted text. The application also accepts page-cache and cross-page table-merge options that are not implemented and do not affect results.
 
+## Groq Evaluation
+
+A live Groq evaluation used the configured model `openai/gpt-oss-120b` on the same 13-page research-paper sample, [`test_file/2608.16753v1.pdf`](test_file/2608.16753v1.pdf). Groq was selected for each run through the API; the application's `.env` default provider was not changed. The model was configured with structured output enabled and vision disabled.
+
+Two extraction instructions were tested without changing application code: one requested exhaustive text-layer extraction, and the other focused on the paper's central question, claims, recommendations, and conclusion. Both runs returned structured Markdown, but neither completed the document. Each processed **1 of 13 pages** and recorded **12 page errors**. Six errors in the full-content run and nine in the focused run were HTTP 413 capability errors; the remaining six and three errors, respectively, were Groq rate limits.
+
+| Instruction | Pages completed | Duration | Items | Evidence verified | Page errors |
+|---|---:|---:|---:|---:|---:|
+| Full-content extraction | 1/13 | 23.57 s | 2 | 2/2 (100%) | 12 |
+| Focused argument | 1/13 | 13.59 s | 3 | 2/3 (66.7%) | 12 |
+
+Both runs had valid schema and Markdown according to application metadata, but ended with `completed_with_warnings` and `all_pages_processed=false`. The first run returned the paper title and author, both supported by verified page-1 excerpts. The focused run returned three claims from page 1. All three claims were manually checked against the PDF and were substantively supported; two excerpts matched the text layer automatically, while the third was marked `evidence_not_found`. That mismatch illustrates the trade-off of strict text-block matching: line wrapping or hyphenation can cause a valid passage to be flagged for manual review.
+
+These results show that Groq produced a small, evidence-backed extraction from the first page, but they do **not** establish PDF-wide accuracy or completeness. The short run durations are not comparable as full-document throughput because 12 pages failed in each run. Input/output token counts and provider billing cost were unavailable in the run metadata.
+
+The supplied sample directory contained no PNG/JPG image, and this Groq configuration does not support vision. Visual-only content therefore could not be tested. The partial runs also provide no reliable coverage evidence for tables, numeric charts, form fields, or checkboxes. The cache and cross-page table-merge options are accepted by the application but are not implemented, so they do not alter these results.
+
+The detailed prompts, run IDs, source checks, error breakdown, metrics, and scope assessment are available in the [Groq test report](test_result/TEST_RESULT_GROQ.md).
+
 ## API Overview
 
 The API is served under `/api`:
