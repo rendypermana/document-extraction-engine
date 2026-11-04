@@ -1,0 +1,7 @@
+id: generic
+name: Generic
+description: General-purpose extraction for any document.
+default_instructions: |
+  Extract all readable content: prose, tables, charts, and form fields.
+hints: |
+  No domain-specific assumptions. Apply the table, chart, and form rules.

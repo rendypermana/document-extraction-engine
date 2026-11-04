@@ -8,3 +8,4 @@ pymupdf==1.28.2
 pillow==13.0.0
 pyyaml==6.0.3
 google-genai==2.34.0
+python-multipart==0.0.20

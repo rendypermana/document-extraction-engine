@@ -1,0 +1,10 @@
+id: research_paper
+name: Research paper
+description: Extract methods, results, tables, and charts.
+default_instructions: |
+  Extract the study objective, methods, main results, and every results table
+  with its full header hierarchy.
+hints: |
+  This is a scientific paper. Tables may have multi-level headers and
+  footnotes that qualify values; keep footnote markers with their values.
+  Figures may be charts; apply the chart rules.

@@ -1,1 +1,1 @@
-"""Adapter provider (Gemini, fake) dan registry pemilihan provider."""
+"""Provider adapters, shared OpenAI-compatible transport, and construction registry."""

@@ -53,12 +53,12 @@ export function formatBytes(bytes) {
 
 export function formatDuration(seconds) {
   if (!Number.isFinite(seconds)) {
-    return "tidak tersedia";
+    return "unavailable";
   }
   if (seconds < 60) {
-    return `${seconds.toFixed(1)} detik`;
+    return `${seconds.toFixed(1)} seconds`;
   }
   const minutes = Math.floor(seconds / 60);
   const rest = Math.round(seconds % 60);
-  return `${minutes} menit ${rest} detik`;
+  return `${minutes} min ${rest} sec`;
 }

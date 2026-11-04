@@ -1,6 +1,5 @@
 # Stage 1: build-only. Node compiles Tailwind and vendors marked/DOMPurify into
-# static/. This stage never reaches the runtime image, so the container that runs
-# the app does not need Node or network access at start-up.
+# static/. Node never reaches the runtime image.
 FROM node:22-alpine AS ui-builder
 
 WORKDIR /build
@@ -15,7 +14,7 @@ RUN node ./scripts/vendor-ui-libs.mjs \
     && npx --no-install tailwindcss -i ./static/css/input.css -o ./static/css/app.css --minify \
     && test -s ./static/css/app.css
 
-# Stage 2: runtime. Python only; no Node, no build tools.
+# Stage 2: runtime. Python only; no Node or frontend build tools.
 FROM python:3.12-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -26,10 +25,10 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY scripts/serve_static.py ./scripts/serve_static.py
+COPY app ./app
 COPY --from=ui-builder /build/static ./static
 
-# Run as an unprivileged user; the app only needs to read static files.
+# Run as an unprivileged user; uploads use the system temporary directory.
 RUN useradd --create-home --uid 10001 appuser \
     && chown -R appuser:appuser /app
 USER appuser
@@ -37,6 +36,6 @@ USER appuser
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/', timeout=2).status == 200 else 1)"
+    CMD python -c "import os,sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:' + os.getenv('PORT','8000') + '/api/health', timeout=2).status == 200 else 1)"
 
-CMD ["python", "scripts/serve_static.py", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "exec python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

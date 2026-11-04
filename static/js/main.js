@@ -16,10 +16,12 @@ import { formatBytes, formatDuration, renderMarkdown } from "./render.js";
 import { createInitialState, isTerminal, validateBeforeRun } from "./state.js";
 import { RUN_STATE_LABEL, STAGE_LABEL, STATUS_LABEL, UI } from "./ui.js";
 
+const POLL_INTERVAL_MS = 1000;
+
 const el = (id) => {
   const node = document.getElementById(id);
   if (!node) {
-    throw new Error(`Elemen UI wajib tidak ditemukan: #${id}`);
+    throw new Error(`Required UI element not found: #${id}`);
   }
   return node;
 };
@@ -95,20 +97,20 @@ function applyFile(file) {
   state = { ...state, file: problem ? null : file, fileError: problem?.message ?? null };
 
   if (problem) {
-    dom.fileState.textContent = "Berkas ditolak";
-    dom.fileHint.textContent = file ? file.name : "Tarik berkas ke sini atau pilih dari perangkat";
+    dom.fileState.textContent = "File rejected";
+    dom.fileHint.textContent = file ? file.name : "Drop a file here or choose from your device";
     dom.fileInput.setAttribute("aria-invalid", "true");
     showNotice(dom.fileError, `${problem.code.toUpperCase()}: ${problem.message}`);
-    announce(`Berkas ditolak: ${problem.message}`);
+    announce(`File rejected: ${problem.message}`);
   } else {
-    dom.fileState.textContent = file ? "Berkas siap" : "Belum ada berkas";
+    dom.fileState.textContent = file ? "File ready" : "No file selected";
     dom.fileHint.textContent = file
       ? `${file.name} \u00B7 ${formatBytes(file.size)}`
-      : "Tarik berkas ke sini atau pilih dari perangkat";
+      : "Drop a file here or choose from your device";
     dom.fileInput.removeAttribute("aria-invalid");
     hideNotice(dom.fileError);
     if (file) {
-      announce(`Berkas dipilih: ${file.name}`);
+      announce(`File selected: ${file.name}`);
     }
   }
   updateRunButton();
@@ -128,10 +130,10 @@ function renderProviderHelp() {
   }
   const parts = [provider.model];
   if (!provider.capabilities.vision) {
-    parts.push("tanpa vision");
+    parts.push("vision unsupported");
   }
   if (!provider.available) {
-    parts.push(`tidak tersedia \u2014 ${provider.unavailable_reason ?? "belum dikonfigurasi"}`);
+    parts.push(`unavailable \u2014 ${provider.unavailable_reason ?? "not configured"}`);
   }
   dom.providerHelp.textContent = parts.join(" \u00B7 ");
   dom.providerHelp.classList.toggle("line-through", !provider.available);
@@ -156,7 +158,7 @@ function syncInstructions() {
   if (value.length > 2000) {
     showNotice(
       dom.instructionsError,
-      "INSTRUCTIONS_TOO_LONG: melebihi batas 2000 karakter.",
+      "INSTRUCTIONS_TOO_LONG: exceeds the 2,000-character limit.",
     );
     dom.instructions.setAttribute("aria-invalid", "true");
   } else {
@@ -186,7 +188,7 @@ function applyDomainDefault(domainId, overwrite) {
 function blockingReason() {
   const provider = currentProvider();
   if (provider && !provider.available) {
-    return `Provider ${provider.label} tidak tersedia: ${provider.unavailable_reason ?? "belum dikonfigurasi"}.`;
+    return `Provider ${provider.label} is unavailable: ${provider.unavailable_reason ?? "not configured"}.`;
   }
   return validateBeforeRun(state);
 }
@@ -195,13 +197,13 @@ function updateRunButton() {
   const reason = blockingReason();
   const busy = state.busy;
   dom.runButton.disabled = busy || reason !== null;
-  dom.runButton.textContent = busy ? "Memproses\u2026" : "Jalankan ekstraksi";
+  dom.runButton.textContent = busy ? "Processing\u2026" : "Run extraction";
   if (reason) {
     dom.runButton.title = reason;
     dom.progressStage.textContent = reason;
   } else {
     dom.runButton.removeAttribute("title");
-    dom.progressStage.textContent = state.progress ? stageLabel(state.progress.stage) : "menunggu";
+    dom.progressStage.textContent = state.progress ? stageLabel(state.progress.stage) : "waiting";
   }
   dom.downloadButton.disabled = !hasResult();
 }
@@ -213,7 +215,7 @@ function hasResult() {
 // ---------------------------------------------------------------- rendering
 
 function stageLabel(stage) {
-  return STAGE_LABEL[stage] ?? stage ?? "menunggu";
+  return STAGE_LABEL[stage] ?? stage ?? "waiting";
 }
 
 function renderRunState() {
@@ -233,22 +235,22 @@ function renderProgress() {
   const total = progress.pages_total ?? 0;
   const done = progress.pages_done ?? 0;
   const failed = progress.pages_failed ?? 0;
-  dom.progressCount.textContent = `${done} / ${total}${failed > 0 ? ` \u00B7 ${failed} gagal` : ""}`;
+  dom.progressCount.textContent = `${done} / ${total}${failed > 0 ? ` \u00B7 ${failed} failed` : ""}`;
 
   // The bar reports processed pages only. It is never advanced by a timer, so it
   // cannot show progress the backend has not reported.
   const percent = total > 0 ? Math.round((done / total) * 100) : 0;
   dom.progressFill.style.width = `${percent}%`;
   dom.progressBar.setAttribute("aria-valuenow", String(percent));
-  dom.progressBar.setAttribute("aria-valuetext", `${done} dari ${total} halaman diproses`);
+  dom.progressBar.setAttribute("aria-valuetext", `${done} of ${total} pages processed`);
   dom.progressStage.textContent = stageLabel(progress.stage);
 
   dom.pageList.replaceChildren();
   for (const page of progress.pages ?? []) {
     const chip = document.createElement("li");
     chip.className = `${UI.pageChip.base} ${UI.pageChip[page.status] ?? UI.pageChip.pending}`;
-    chip.textContent = page.cached ? `H${page.page}*` : `H${page.page}`;
-    chip.title = `Halaman ${page.page}: ${page.status}${page.cached ? " (dari cache)" : ""}`;
+    chip.textContent = page.cached ? `P${page.page}*` : `P${page.page}`;
+    chip.title = `Page ${page.page}: ${page.status}${page.cached ? " (cached)" : ""}`;
     dom.pageList.append(chip);
   }
 }
@@ -259,7 +261,7 @@ function buildMessage(entry, tone) {
 
   const head = document.createElement("p");
   head.className = tone === "error" ? UI.message.errorHead : UI.message.warningHead;
-  const scope = entry.scope === "run" ? "seluruh run" : `halaman ${entry.page ?? "\u2013"}`;
+  const scope = entry.scope === "run" ? "entire run" : `page ${entry.page ?? "\u2013"}`;
   head.textContent = `${entry.code} \u00B7 ${scope}`;
 
   const body = document.createElement("p");
@@ -267,6 +269,43 @@ function buildMessage(entry, tone) {
   body.textContent = entry.message;
 
   item.append(head, body);
+  if (tone === "warning" && entry.item_id) {
+    const references = state.run?.result?.references?.filter(
+      (reference) =>
+        reference.item_id === entry.item_id &&
+        typeof reference.excerpt === "string" &&
+        reference.excerpt.length > 0,
+    );
+    if (references?.length) {
+      const evidence = document.createElement("section");
+      evidence.className = UI.message.evidence;
+      evidence.setAttribute("aria-label", "Related evidence");
+
+      const evidenceTitle = document.createElement("p");
+      evidenceTitle.className = UI.message.evidenceTitle;
+      evidenceTitle.textContent = "Related evidence";
+
+      const evidenceList = document.createElement("ul");
+      evidenceList.className = UI.message.evidenceList;
+      for (const reference of references) {
+        const evidenceItem = document.createElement("li");
+        const link = document.createElement("a");
+        link.className = UI.message.evidenceLink;
+        link.href = `#ref-${reference.id}`;
+        link.textContent = `${reference.id} \u00B7 page ${reference.page}`;
+
+        const excerpt = document.createElement("blockquote");
+        excerpt.className = UI.message.evidenceExcerpt;
+        excerpt.textContent = `\u201C${reference.excerpt}\u201D`;
+
+        evidenceItem.append(link, excerpt);
+        evidenceList.append(evidenceItem);
+      }
+
+      evidence.append(evidenceTitle, evidenceList);
+      item.append(evidence);
+    }
+  }
   return item;
 }
 
@@ -315,35 +354,35 @@ function renderMetadata() {
   const metadata = state.run?.metadata ?? null;
   dom.metadataList.replaceChildren();
   if (!metadata) {
-    const [dt, dd] = metadataEntry("Metadata", "Belum tersedia");
+    const [dt, dd] = metadataEntry("Metadata", "Unavailable");
     dom.metadataList.append(dt, dd);
     return;
   }
 
   const usage = metadata.usage;
-  // REQ-31: a provider that reports no usage must read "tidak tersedia", never 0.
+  // REQ-31: a provider that reports no usage must read "unavailable", never 0.
   const usageText =
     usage && usage.available
-      ? `${usage.input_tokens} masuk / ${usage.output_tokens} keluar`
-      : "tidak tersedia";
+      ? `${usage.input_tokens} input / ${usage.output_tokens} output`
+      : "unavailable";
 
   const validation = metadata.validation ?? {};
   const rows = [
-    ["Provider", metadata.provider ?? "tidak tersedia"],
-    ["Model", metadata.model ?? "tidak tersedia"],
-    ["Durasi", formatDuration(metadata.duration_s)],
-    ["Usage", usageText],
+    ["Provider", metadata.provider ?? "unavailable"],
+    ["Model", metadata.model ?? "unavailable"],
+    ["Duration", formatDuration(metadata.duration_s)],
+    ["Token usage", usageText],
     ["Retry", String(metadata.retries ?? 0)],
     ["Cache hit", String(metadata.cache_hits ?? 0)],
     [
-      "Halaman",
-      `${metadata.pages_processed ?? 0} / ${metadata.pages_total ?? 0} diproses`,
+      "Pages",
+      `${metadata.pages_processed ?? 0} / ${metadata.pages_total ?? 0} processed`,
     ],
-    ["Skema valid", validation.schema_ok === true ? "ya" : "tidak"],
-    ["Semua halaman", validation.all_pages_processed === true ? "ya" : "tidak"],
-    ["Tanpa evidence", String(validation.items_without_evidence ?? 0)],
-    ["Evidence tak terverifikasi", String(validation.evidence_unverifiable ?? 0)],
-    ["Markdown valid", validation.markdown_format_ok === true ? "ya" : "tidak"],
+    ["Valid schema", validation.schema_ok === true ? "yes" : "no"],
+    ["All pages processed", validation.all_pages_processed === true ? "yes" : "no"],
+    ["Items without evidence", String(validation.items_without_evidence ?? 0)],
+    ["Unverified evidence", String(validation.evidence_unverifiable ?? 0)],
+    ["Valid Markdown", validation.markdown_format_ok === true ? "yes" : "no"],
   ];
 
   for (const [term, value] of rows) {
@@ -362,7 +401,7 @@ function renderSummaryIfPresent() {
   );
   if (parts.length > 0) {
     dom.referencesSummary.textContent =
-      `${summary.items_total} item \u00B7 ${parts.join(" \u00B7 ")}`;
+      `${summary.items_total} items \u00B7 ${parts.join(" \u00B7 ")}`;
   }
 }
 
@@ -381,10 +420,10 @@ function resetRunView() {
   dom.markdownPane.replaceChildren();
   const title = document.createElement("p");
   title.className = "font-mono text-sm font-bold uppercase";
-  title.textContent = "Belum ada hasil";
+  title.textContent = "No results yet";
   const body = document.createElement("p");
   body.className = "mt-2 text-sm font-semibold";
-  body.textContent = "Pilih berkas, isi instruksi, lalu jalankan ekstraksi.";
+  body.textContent = "Choose a file, enter instructions, then run extraction.";
   dom.markdownPane.append(title, body);
   renderReferences(dom.referencesList, dom.referencesSummary, [], null);
   renderMetadata();
@@ -417,8 +456,8 @@ function applyRunResponse(payload) {
     }
     announce(
       status === "failed"
-        ? "Run gagal. Lihat daftar error."
-        : "Run selesai. Markdown dan referensi tersedia.",
+        ? "Run failed. See the error list."
+        : "Run completed. Markdown and references are available.",
     );
   }
   updateRunButton();
@@ -436,7 +475,7 @@ async function startRun() {
   resetRunView();
   state = { ...state, busy: true };
   updateRunButton();
-  announce("Run dimulai. Menunggu status dari backend.");
+  announce("Run started. Waiting for backend status.");
 
   try {
     const created = await createRun({
@@ -471,6 +510,9 @@ async function pollUntilTerminal(runId) {
       if (isTerminal(payload.status)) {
         return;
       }
+      await new Promise((resolve) => {
+        setTimeout(resolve, POLL_INTERVAL_MS);
+      });
     } catch (error) {
       handleApiError(error);
       return;
@@ -487,7 +529,7 @@ function handleApiError(error) {
     page: null,
     message: known
       ? error.message
-      : "Tidak dapat menghubungi backend. Periksa koneksi lalu coba lagi.",
+      : "Could not reach the backend. Check your connection and try again.",
   };
   state = {
     ...state,
@@ -510,7 +552,7 @@ function resetAll() {
   applyDomainDefault(dom.domain.value, true);
   state = { ...state, busy: false, errors: [], warnings: [] };
   resetRunView();
-  announce("Formulir diatur ulang.");
+  announce("Form reset.");
 }
 
 function selectReference(id) {
@@ -535,7 +577,7 @@ function populateSelect(select, entries, labelKey) {
     option.value = entry.id;
     option.textContent = entry[labelKey] ?? entry.id;
     if (entry.available === false) {
-      option.textContent = `${option.textContent} \u2014 tidak tersedia`;
+      option.textContent = `${option.textContent} \u2014 unavailable`;
     }
     select.append(option);
   }
@@ -634,7 +676,7 @@ dom.resetButton.addEventListener("click", () => {
 
 dom.downloadButton.addEventListener("click", () => {
   const done = downloadMarkdown(state.run?.result?.markdown, state.file?.name);
-  announce(done ? "Markdown diunduh." : "Tidak ada Markdown untuk diunduh.");
+  announce(done ? "Markdown downloaded." : "No Markdown is available to download.");
 });
 
 function selectReferenceFromEvent(event) {
@@ -653,5 +695,6 @@ function selectReferenceFromEvent(event) {
 
 dom.markdownPane.addEventListener("click", selectReferenceFromEvent);
 dom.referencesList.addEventListener("click", selectReferenceFromEvent);
+dom.warningsList.addEventListener("click", selectReferenceFromEvent);
 
 bootstrap();

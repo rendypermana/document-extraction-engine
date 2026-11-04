@@ -1,0 +1,11 @@
+id: tax_form
+name: Tax form
+description: Extract fields and checkboxes from tax forms.
+default_instructions: |
+  Extract every form field with its label and value, including all checkboxes
+  and their state, and any amounts with their units.
+hints: |
+  This is a form image. Fields can be empty; report an empty labeled field as
+  "missing" rather than skipping it. Handwriting and low-contrast text may be
+  hard to read; use "uncertain" or "unreadable" instead of guessing. Keep
+  field numbers or line numbers with their labels.

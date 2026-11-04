@@ -39,6 +39,11 @@ export const UI = Object.freeze({
     warning: "border-[3px] border-black border-dashed bg-white p-3 text-black",
     warningHead: "font-mono text-xs font-black uppercase tracking-[0.15em] text-black",
     warningBody: "mt-1 text-sm font-semibold text-black",
+    evidence: "mt-4 border-t-2 border-dashed border-black pt-3",
+    evidenceTitle: "font-mono text-xs font-black uppercase tracking-[0.1em]",
+    evidenceList: "mt-3 flex flex-col gap-3",
+    evidenceLink: "font-mono text-xs font-black uppercase underline decoration-2 underline-offset-4",
+    evidenceExcerpt: "mt-2 border-l-4 border-black pl-3 font-mono text-sm leading-relaxed",
   }),
   metadata: Object.freeze({
     term: "bg-white px-3 py-2 font-mono text-xs font-black uppercase tracking-[0.1em] text-black",
@@ -51,7 +56,7 @@ export const UI = Object.freeze({
   }),
   dropzone: Object.freeze({
     idle: "hover:bg-black",
-    active: "bg-black",
+    active: "bg-black text-white",
   }),
   inline: Object.freeze({
     invertedText: "text-white",
@@ -66,28 +71,28 @@ export const STATUS_LABEL = Object.freeze({
   unreadable: "UNREADABLE",
   missing: "MISSING",
   failed: "FAILED",
-  unknown: "TIDAK DIKETAHUI",
+  unknown: "UNKNOWN",
 });
 
 export const RUN_STATE_LABEL = Object.freeze({
-  idle: "Siap",
-  queued: "Menunggu giliran",
-  running: "Sedang memproses",
-  completed: "Selesai",
-  completed_with_warnings: "Selesai dengan peringatan",
-  failed: "Gagal",
+  idle: "Ready",
+  queued: "Queued",
+  running: "Processing",
+  completed: "Completed",
+  completed_with_warnings: "Completed with warnings",
+  failed: "Failed",
 });
 
 export const STAGE_LABEL = Object.freeze({
-  loading: "memuat dokumen",
-  extracting: "mengekstraksi halaman",
-  aggregating: "menggabungkan hasil",
-  validating: "memvalidasi",
-  rendering: "merender Markdown",
+  loading: "loading document",
+  extracting: "extracting pages",
+  aggregating: "aggregating results",
+  validating: "validating",
+  rendering: "rendering Markdown",
 });
 
 export const VERIFIED_LABEL = Object.freeze({
-  verified: "TERVERIFIKASI",
-  notFound: "TIDAK DITEMUKAN",
-  notVerifiable: "TIDAK DAPAT DIVERIFIKASI",
+  verified: "VERIFIED",
+  notFound: "NOT FOUND",
+  notVerifiable: "NOT VERIFIABLE",
 });

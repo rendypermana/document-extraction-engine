@@ -2,6 +2,41 @@
 
 Repositori ini menggunakan dokumentasi di [`docs/`](docs/) sebagai **source of truth** untuk seluruh pekerjaan desain, implementasi, pengujian, dan review. Jangan mulai coding hanya berdasarkan asumsi, isi issue, atau kondisi kode saat ini.
 
+## Jalankan aplikasi
+
+Siapkan `.env` dari template bila belum ada. Atur provider ke `fake` untuk menguji seluruh alur tanpa API key; provider live membutuhkan key dan model yang sesuai di `.env`.
+
+```powershell
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+docker compose up --build
+```
+
+Buka <http://localhost:8000>. UI dan API FastAPI berjalan pada satu origin; health check tersedia di `/api/health`. Compose memasukkan nilai `.env` ke container saat runtime, sedangkan `.env` dikecualikan dari build context dan tidak disalin ke image.
+
+Run dan hasil hanya disimpan sementara di memori dan hilang saat container dimulai ulang; tidak ada database permanen. Berkas unggahan sementara dihapus setelah diproses. Provider `fake` hanya menguji integrasi dan bukan model AI atau ukuran akurasi. Kontrak endpoint ada di [`docs/API.md`](docs/API.md), dan konfigurasi provider ada di [`docs/PROVIDERS.md`](docs/PROVIDERS.md).
+
+Perubahan kode atau aset memerlukan rebuild dengan `docker compose up --build`. Perubahan nilai `.env` diterapkan dengan menjalankan `docker compose up -d`, yang akan membuat ulang container bila konfigurasinya berubah. Hentikan layanan dengan `docker compose down`.
+
+API lokal tidak memiliki autentikasi; gunakan hanya di lingkungan lokal tepercaya dan jangan diekspos ke jaringan publik.
+
+## Batasan yang diketahui
+
+- Fake provider hanya memvalidasi alur integrasi; hasilnya bukan ukuran akurasi ekstraksi model.
+- Run store hanya berada di memori dan tidak ada database atau riwayat persisten.
+- Cache halaman dan penggabungan tabel lintas halaman belum diimplementasikan; opsi terkait belum mengubah hasil.
+- Evaluasi pada dokumen sampel asli dan validasi akurasi provider tetap perlu dilakukan terpisah.
+
+## Evaluasi OpenRouter
+
+Pengujian langsung pada `test_file/2608.16753v1.pdf` menggunakan OpenRouter `google/gemini-3-flash-preview`:
+
+| Instruksi | Halaman selesai | Durasi | Item | Referensi terverifikasi | Peringatan |
+|---|---:|---:|---:|---:|---:|
+| Ekstraksi seluruh konten | 13/13 | 243,62 dtk | 84 | 76/89 (85,4%) | 13 |
+| Argumen utama | 13/13 | 106,71 dtk | 65 | 52/69 (75,4%) | 19 |
+
+Kedua run lolos pemeriksaan schema dan format Markdown serta memproses seluruh halaman, tetapi berstatus `completed_with_warnings` karena kutipan evidence tidak cocok dengan text layer; run kedua juga memiliki dua item tanpa evidence. Delapan fakta yang diperiksa manual pada setiap run cocok dengan sumber dan halaman referensinya. Skor spot-check tersebut bukan ukuran akurasi atau kelengkapan seluruh dokumen. Sampel gambar PNG/JPG kedua tidak tersedia; tabel, chart numerik, form, dan checkbox tidak terdapat pada PDF ini sehingga belum teruji langsung. Trade-off desainnya adalah validasi evidence yang ketat demi auditabilitas, yang dapat menandai kutipan valid sebagai belum terverifikasi akibat perbedaan format teks. Detail prompt, metrik, kegagalan, keterbatasan, dan trade-off tersedia di [`test_result/TEST_RESULT_OPENROUTER.md`](test_result/TEST_RESULT_OPENROUTER.md).
+
 ## Aturan wajib sebelum coding
 
 Untuk setiap tugas:
@@ -83,4 +118,3 @@ Setiap hasil pekerjaan minimal menyebutkan:
 2. dokumen source of truth yang diperiksa;
 3. tes atau verifikasi yang dijalankan beserta hasilnya;
 4. konflik, asumsi, keterbatasan, atau bagian yang belum diverifikasi.
-

@@ -8,7 +8,7 @@ export const RUN_STATUS_TERMINAL = Object.freeze([
 
 export function createInitialState() {
   return {
-    mode: "demo",
+    mode: "api",
     file: null,
     fileError: null,
     providers: [],
@@ -37,13 +37,13 @@ export function isTerminal(status) {
 // reason lets the UI explain a disabled button instead of leaving it unexplained.
 export function validateBeforeRun(state) {
   if (!state.file) {
-    return "Pilih berkas PDF, PNG, atau JPG terlebih dahulu.";
+    return "Choose a PDF, PNG, or JPG file first.";
   }
   if (state.instructions.trim().length === 0) {
-    return "Instruksi ekstraksi tidak boleh kosong.";
+    return "Extraction instructions cannot be empty.";
   }
   if (state.instructions.length > 2000) {
-    return "Instruksi melebihi batas 2000 karakter.";
+    return "Instructions exceed the 2,000-character limit.";
   }
   return null;
 }

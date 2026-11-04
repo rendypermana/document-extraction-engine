@@ -32,7 +32,7 @@ function statusBadge(status, inverted) {
 
 function formatBbox(bbox) {
   if (!Array.isArray(bbox) || bbox.length !== 4) {
-    return "bbox: tidak tersedia";
+    return "bbox: unavailable";
   }
   return `bbox: ${bbox.map((value) => Number(value).toFixed(2)).join(", ")}`;
 }
@@ -57,7 +57,7 @@ function buildReference(reference, isActive) {
   if (reference.is_estimate) {
     const estimate = document.createElement("span");
     estimate.className = `${UI.badge.base} ${isActive ? UI.badge.inverted : UI.badge.normal}`;
-    estimate.textContent = "ESTIMASI";
+    estimate.textContent = "ESTIMATE";
     header.append(estimate);
   }
 
@@ -68,13 +68,13 @@ function buildReference(reference, isActive) {
 
   const meta = document.createElement("p");
   meta.className = UI.reference.meta;
-  meta.textContent = `Halaman ${reference.page} \u00B7 ${formatBbox(reference.bbox)} \u00B7 item ${reference.item_id}`;
+  meta.textContent = `Page ${reference.page} \u00B7 ${formatBbox(reference.bbox)} \u00B7 item ${reference.item_id}`;
 
   const link = document.createElement("a");
   link.className = UI.reference.link;
   link.href = `#ref-${reference.id}`;
-  link.textContent = `Tautan ${reference.id}`;
-  link.setAttribute("aria-label", `Tautan permanen ke referensi ${reference.id}`);
+  link.textContent = `Link ${reference.id}`;
+  link.setAttribute("aria-label", `Permanent link to reference ${reference.id}`);
 
   meta.append(document.createTextNode(" \u00B7 "), link);
   item.append(header, excerpt, meta);
@@ -89,13 +89,13 @@ export function renderReferences(list, summary, references, activeId) {
     empty.className = "border-[3px] border-dashed border-black p-4";
     const title = document.createElement("p");
     title.className = "font-mono text-xs font-black uppercase";
-    title.textContent = "Tidak ada referensi";
+    title.textContent = "No references";
     const body = document.createElement("p");
     body.className = "mt-2 text-sm font-semibold";
-    body.textContent = "Referensi muncul setelah run selesai.";
+    body.textContent = "References will appear when a run completes.";
     empty.append(title, body);
     list.append(empty);
-    summary.textContent = "0 referensi";
+    summary.textContent = "0 references";
     return;
   }
 
@@ -103,8 +103,8 @@ export function renderReferences(list, summary, references, activeId) {
   const unverified = references.filter((item) => item.verified === false).length;
   const unverifiable = references.filter((item) => item.verified === null).length;
   summary.textContent =
-    `${references.length} referensi \u00B7 ${verified} terverifikasi` +
-    ` \u00B7 ${unverified} tidak ditemukan \u00B7 ${unverifiable} tidak dapat diverifikasi`;
+    `${references.length} references \u00B7 ${verified} verified` +
+    ` \u00B7 ${unverified} not found \u00B7 ${unverifiable} not verifiable`;
 
   for (const reference of references) {
     list.append(buildReference(reference, reference.id === activeId));
@@ -162,7 +162,7 @@ export function decorateReferenceMarkers(container, references) {
         marker.className =
           "border-2 border-black px-1 font-mono text-xs font-black no-underline hover:bg-black hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black";
         marker.textContent = id;
-        marker.setAttribute("aria-label", `Lihat referensi ${id}`);
+        marker.setAttribute("aria-label", `View reference ${id}`);
         fragment.append(marker);
       } else {
         fragment.append(document.createTextNode(match[0]));
@@ -176,4 +176,3 @@ export function decorateReferenceMarkers(container, references) {
     node.parentNode?.replaceChild(fragment, node);
   }
 }
-
