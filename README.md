@@ -193,3 +193,15 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 - The local API has no authentication. Do not expose it to untrusted networks.
 - Required-sample evaluations and extraction-quality ground truth are separate from automated integration tests. Do not treat fake-provider tests as model-quality evidence.
 
+## Next Improvements
+
+- Add persistent storage for runs, results, metadata, and audit history.
+- Add authentication, authorization, and deployment safeguards for multi-user or public environments.
+- Process independent pages concurrently with configurable limits while preserving provider rate-limit protection.
+- Implement page-level caching and reliable cross-page table merging.
+- Add a document preview with clickable references and bounding-box highlighting.
+- Support additional export formats such as structured JSON and CSV.
+- Expand the evaluation dataset with PDF and image samples containing tables, numeric charts, forms, checkboxes, scans, and difficult OCR cases.
+- Create manually reviewed ground truth and report extraction precision, recall, evidence-match quality, unsupported-output rate, latency, token usage, and cost.
+- Add production monitoring for provider availability, retries, rate limits, latency, usage, and extraction failures.
+
