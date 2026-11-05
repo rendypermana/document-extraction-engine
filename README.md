@@ -141,6 +141,25 @@ separately in the tax-form run below. The design trade-off favors auditable,
 evidence-linked output: strict text-layer matching can flag a valid excerpt as
 unverified when line wrapping or image-only content differs from extracted text.
 
+### Additional OpenRouter Research-Paper PDF Result
+
+Another end-to-end PDF run demonstrates that OpenRouter with
+`google/gemini-3-flash-preview` can answer the `research_paper` extraction task
+on a multi-page scientific paper. The generated result covers 18 source pages
+and includes the study objectives, research questions, methods, participant and
+equipment details, main findings, eye-tracking analysis, structured tables,
+conclusions, and 72 page-linked source references.
+
+The complete generated Markdown is available at
+[`test_result/1-s2-0.md`](test_result/1-s2-0.md).
+
+This artifact provides a directly reviewable example that the configured
+OpenRouter model can process a research-paper PDF through the complete pipeline,
+not merely return a successful provider response. Some complex or continued
+table cells remain marked `UNCERTAIN`, so the output demonstrates working
+extraction rather than perfect document-wide accuracy and should be checked
+against the source PDF before operational use.
+
 ### OpenRouter Tax-Form Image Evaluation
 
 A subsequent live image evaluation demonstrates that OpenRouter with
