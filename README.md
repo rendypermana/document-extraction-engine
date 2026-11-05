@@ -97,6 +97,29 @@ When a provider is configured without vision, the application sends the page's e
 
 The loaders run local Tesseract OCR on image uploads and PDF pages that have no digital text layer. The Docker image includes Tesseract and English/Indonesian language data; local installs need Tesseract and the selected language data installed separately. Set `OCR_ENABLED=false` to disable OCR, or set `OCR_LANGUAGE` to installed Tesseract language codes joined with `+` (for example `ind+eng`; the application default is `eng`). OCR text and normalized page coordinates are supplied to the model for evidence matching, but matching an OCR excerpt is labeled as an OCR-text match because OCR can misread the original image. The page image is still sent to vision-capable models, and OCR does not replace visual analysis for charts or layout.
 
+### Image Enhancement Pipeline
+
+PNG and JPG uploads are normalized before both local OCR and vision-model
+inference. The image loader applies the following steps:
+
+1. Validate the file signature and apply its EXIF orientation.
+2. Downscale images that exceed the configured `MAX_IMAGE_PIXELS` safety limit.
+3. Upscale small document images whose shortest edge is between 256 and 899
+   pixels. The scale is limited to 2x and a 1,200-pixel shortest-edge target,
+   using Lanczos resampling.
+4. Detect effectively grayscale images using their average color saturation. For
+   low-saturation documents, convert luminance to grayscale and apply automatic
+   contrast stretching. Color documents retain their RGB information.
+5. Apply an unsharp mask to strengthen thin printed characters, box borders, and
+   checkbox marks. Transparent input is composited onto white first.
+6. Encode the normalized result as PNG, then use that same enhanced image for
+   Tesseract OCR and for providers configured with vision support.
+
+This preprocessing improves readability for compressed phone images and faint
+scans, but it cannot reconstruct characters that are absent from the original
+pixels. Evidence marked `UNCERTAIN` must therefore still be checked against the
+source document.
+
 ## OpenRouter Evaluation
 
 A live sample evaluation was run with OpenRouter using `google/gemini-3-flash-preview` and the research-paper domain. The test input was the 13-page PDF at [`test_file/2608.16753v1.pdf`](test_file/2608.16753v1.pdf). The requested path `test_file/2608-16753v1.pdf` is not the current filename in the repository; the existing PDF filename uses a period after `2608`. The extracted Markdown sample is available at [`test_result/2608-16753v1.md`](test_result/2608-16753v1.md).
@@ -112,7 +135,34 @@ Two different instructions were evaluated without changing application code:
 
 Both runs passed schema and Markdown checks and processed every page, but ended with `completed_with_warnings`. The warnings included evidence excerpts that could not be matched automatically to the PDF text layer; the focused run also had two items without evidence. Eight manually checked facts per run matched the source and cited the expected pages (8/8 in each run). This is a small spot-check, not a document-wide accuracy or completeness score. See the [detailed OpenRouter test report](test_result/TEST_RESULT_OPENROUTER.md) for run IDs, instructions, methodology, metrics, and limitations.
 
-This PDF contains prose and conceptual figures, but no numeric charts, tables, forms, or checkboxes were available to test. No PNG/JPG sample was present, so the image-input requirement remains unevaluated with a live model. The design trade-off favors auditable, evidence-linked output: strict text-layer matching can flag a valid excerpt as unverified when line wrapping or image-only content differs from extracted text.
+This PDF contains prose and conceptual figures, but no numeric charts, tables,
+forms, or checkboxes were available in that sample. Image input was evaluated
+separately in the tax-form run below. The design trade-off favors auditable,
+evidence-linked output: strict text-layer matching can flag a valid excerpt as
+unverified when line wrapping or image-only content differs from extracted text.
+
+### OpenRouter Tax-Form Image Evaluation
+
+A subsequent live image evaluation demonstrates that OpenRouter with
+`google/gemini-3-flash-preview` can extract structured information from a
+low-resolution Indonesian corporate income-tax form image. The tax-form domain
+and vision input were used for this run. The image-enhancement pipeline enlarged
+the sample from 448x685 to 896x1,370 pixels and applied grayscale contrast
+stretching and sharpening before OCR and model inference. The result includes the
+document title
+(`SPT TAHUNAN PAJAK PENGHASILAN WAJIB PAJAK BADAN`), form number `1771`, tax
+year, taxpayer identity, business type, accounting period, checkbox states,
+taxable-income amounts, tax credits, tax payable, and payment date.
+
+The complete evidence-linked output is available at
+[`test_result/WhatsApp-Image-2026-11-05-at-11-04-55-AM.md`](test_result/WhatsApp-Image-2026-11-05-at-11-04-55-AM.md).
+
+This sample proves that the configured OpenRouter vision model can return useful
+structured tax-document extraction from a JPG image through the end-to-end
+application pipeline. It is not a claim of perfect OCR accuracy: several values
+and checkbox states remain marked `UNCERTAIN` when their evidence cannot be
+matched reliably against OCR text. The source image is low resolution, so results
+should still be reviewed against the original document before operational use.
 
 ## Groq Evaluation
 

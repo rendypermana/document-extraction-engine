@@ -495,7 +495,7 @@ def test_document_aggregation_preserves_page_level_ocr_findings() -> None:
     assert DocumentAggregator().aggregate([page]).findings == [finding]
 
 
-def test_evidence_match_does_not_join_separate_text_blocks() -> None:
+def test_evidence_match_joins_adjacent_ocr_text_blocks() -> None:
     page = Page(
         number=1,
         width_px=10,
@@ -520,9 +520,45 @@ def test_evidence_match_does_not_join_separate_text_blocks() -> None:
 
     validated = PageEvidenceValidator().validate(page, output, metrics)
 
-    assert validated.items[0].status == Status.uncertain
-    assert validated.items[0].evidence[0].verified is False
-    assert validated.items[0].findings[0].code == "evidence_not_found"
+    assert validated.items[0].status == Status.ok
+    assert validated.items[0].evidence[0].verified is True
+    assert validated.items[0].evidence[0].match_score == 0.98
+
+
+def test_evidence_match_ignores_form_character_spacing_and_punctuation() -> None:
+    page = Page(
+        number=1,
+        width_px=10,
+        height_px=10,
+        image=b"png",
+        image_mime="image/png",
+        text_blocks=[
+            {"id": "b1", "text": "NPWP 12 345 678 9 000 000", "bbox": [0, 0, 1, 1]},
+        ],
+        text_source="ocr",
+    )
+    output = ModelPageOutput.model_validate(
+        json.loads(
+            _response(
+                1,
+                "NPWP: 12.345.678.9-000.000",
+                "NPWP: 12.345.678.9-000.000",
+            )
+        )
+    )
+    metrics = PageMetrics(
+        latency_s=0,
+        attempts=1,
+        retries=0,
+        repaired=False,
+        cached=False,
+    )
+
+    validated = PageEvidenceValidator().validate(page, output, metrics)
+
+    assert validated.items[0].status == Status.ok
+    assert validated.items[0].evidence[0].verified is True
+    assert validated.items[0].evidence[0].match_score == 0.98
 
 
 def test_validator_marks_missing_evidence_uncertain_without_promoting_status() -> None:

@@ -61,6 +61,7 @@ class OpenAICompatibleProvider:
     async def generate(self, request: GenerationRequest) -> GenerationResponse:
         payload: dict[str, Any] = {
             "model": self._model,
+            "temperature": 0,
             "messages": [
                 {"role": "system", "content": request.system_prompt},
                 {"role": "user", "content": self._user_content(request)},

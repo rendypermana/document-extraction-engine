@@ -99,6 +99,7 @@ def test_compatible_provider_sends_chat_request_and_parses_usage(
     assert sent.headers["Authorization"] == key_header
     expected_model = settings.openrouter_model if provider == "openrouter" else settings.groq_model
     assert payload["model"] == expected_model
+    assert payload["temperature"] == 0
     assert payload["messages"][0] == {"role": "system", "content": "system instructions"}
     assert payload["messages"][1]["content"][0] == {
         "type": "text",

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+from difflib import SequenceMatcher
 from math import isfinite
 
 from app.core.schemas import (
@@ -55,6 +57,7 @@ class PageEvidenceValidator:
                 )
 
             for model_evidence in model_item.evidence:
+                match_score = 0.0
                 bbox = (
                     self._normalize_bbox(model_evidence.bbox)
                     if model_evidence.bbox is not None
@@ -99,13 +102,9 @@ class PageEvidenceValidator:
                     verification_source = (
                         "ocr_text" if page.text_source == "ocr" else "digital_text"
                     )
-                    excerpt = self._normalize_text(model_evidence.excerpt)
-                    verified = bool(
-                        excerpt
-                        and any(
-                            excerpt in self._normalize_text(block.text)
-                            for block in page.text_blocks
-                        )
+                    verified, match_score = self._match_evidence(
+                        model_evidence.excerpt,
+                        [block.text for block in page.text_blocks],
                     )
                     if not verified:
                         status = self._lower_status(status)
@@ -124,7 +123,7 @@ class PageEvidenceValidator:
                         excerpt=model_evidence.excerpt,
                         bbox=bbox,
                         verified=verified,
-                        match_score=1.0 if verified else (0.0 if verified is False else None),
+                        match_score=match_score if verified is not None else None,
                         verification_source=(
                             verification_source
                             if model_evidence.page == page.number and page.text_blocks
@@ -234,6 +233,63 @@ class PageEvidenceValidator:
     @staticmethod
     def _normalize_text(value: str) -> str:
         return " ".join(value.split()).casefold()
+
+    @classmethod
+    def _match_evidence(cls, excerpt: str, blocks: list[str]) -> tuple[bool, float]:
+        """Match OCR evidence despite spacing/punctuation and adjacent block splits.
+
+        Exact normalized matching remains preferred. Compact matching handles boxed
+        identifiers such as ``1 2 . 3 4 5`` and OCR block boundaries. A conservative
+        similarity fallback covers one or two OCR substitutions without accepting a
+        merely related sentence.
+        """
+        normalized_excerpt = cls._normalize_text(excerpt)
+        if not normalized_excerpt:
+            return False, 0.0
+
+        normalized_blocks = [cls._normalize_text(block) for block in blocks]
+        if any(normalized_excerpt in block for block in normalized_blocks):
+            return True, 1.0
+
+        compact_excerpt = cls._compact_text(normalized_excerpt)
+        compact_page = cls._compact_text(" ".join(normalized_blocks))
+        if len(compact_excerpt) >= 4 and compact_excerpt in compact_page:
+            return True, 0.98
+
+        best_score = 0.0
+        excerpt_length = len(compact_excerpt)
+        if excerpt_length >= 8:
+            for block in normalized_blocks:
+                compact_block = cls._compact_text(block)
+                if not compact_block:
+                    continue
+                if excerpt_length <= len(compact_block):
+                    window_sizes = range(
+                        max(1, excerpt_length - 2),
+                        min(len(compact_block), excerpt_length + 2) + 1,
+                    )
+                    for size in window_sizes:
+                        for start in range(0, len(compact_block) - size + 1):
+                            score = SequenceMatcher(
+                                None,
+                                compact_excerpt,
+                                compact_block[start : start + size],
+                                autojunk=False,
+                            ).ratio()
+                            best_score = max(best_score, score)
+                else:
+                    best_score = max(
+                        best_score,
+                        SequenceMatcher(
+                            None, compact_excerpt, compact_block, autojunk=False
+                        ).ratio(),
+                    )
+
+        return best_score >= 0.9, round(best_score, 3)
+
+    @staticmethod
+    def _compact_text(value: str) -> str:
+        return re.sub(r"[^\w]+", "", value, flags=re.UNICODE).casefold()
 
     @staticmethod
     def _lower_status(status: Status) -> Status:

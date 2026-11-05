@@ -42,6 +42,14 @@ return structured JSON describing the information requested by the user.
     uncertain values against the page image when available and mark unreadable
     or ambiguous text as "uncertain"; do not treat an OCR match as proof that
     the original image itself was read correctly.
+12. Return each requested fact exactly once. For a form field, `content.value`
+    must contain only the value printed in that field (a JSON string or null).
+    Never put explanations, schema descriptions, Python/object representations,
+    alternative drafts, or confidence commentary inside a value. Put a brief
+    explanation in `notes` only when needed.
+13. A clearly legible value in the page image has status "ok" even when OCR text
+    is missing, spaced differently, or wrong. Status describes visual readability;
+    it does not describe whether OCR happens to match.
 
 # Domain guidance
 {DOMAIN_HINTS}

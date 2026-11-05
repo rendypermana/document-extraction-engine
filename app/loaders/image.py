@@ -7,7 +7,7 @@ from io import BytesIO
 from math import sqrt
 
 import pymupdf
-from PIL import Image, ImageOps, UnidentifiedImageError
+from PIL import Image, ImageFilter, ImageOps, ImageStat, UnidentifiedImageError
 
 from app.config import Settings, get_settings
 from app.core.errors import DocumentLoadError
@@ -73,6 +73,23 @@ class ImageLoader:
                         )
                         oriented.thumbnail(target, Image.Resampling.LANCZOS)
 
+                    # Phone screenshots and shared images are often too small for
+                    # boxed form characters. Upscaling cannot restore lost detail,
+                    # but it gives OCR and vision encoders a substantially cleaner
+                    # representation of thin strokes and checkbox marks.
+                    shortest_edge = min(oriented.size)
+                    if 256 <= shortest_edge < 900:
+                        scale = min(2.0, 1200 / shortest_edge)
+                        oriented = oriented.resize(
+                            (
+                                max(1, round(oriented.width * scale)),
+                                max(1, round(oriented.height * scale)),
+                            ),
+                            Image.Resampling.LANCZOS,
+                        )
+
+                    oriented = self._enhance_document_image(oriented)
+
                     has_alpha = "A" in oriented.getbands() or "transparency" in oriented.info
                     normalized = oriented.convert("RGBA" if has_alpha else "RGB")
                     output = BytesIO()
@@ -123,3 +140,21 @@ class ImageLoader:
                 )
             ],
         )
+
+    @staticmethod
+    def _enhance_document_image(image: Image.Image) -> Image.Image:
+        """Improve low-saturation scans without discarding color documents."""
+        if "A" in image.getbands() or "transparency" in image.info:
+            rgba = image.convert("RGBA")
+            background = Image.new("RGBA", rgba.size, "white")
+            background.alpha_composite(rgba)
+            rgb = background.convert("RGB")
+        else:
+            rgb = image.convert("RGB")
+        saturation = ImageStat.Stat(rgb.convert("HSV").getchannel("S")).mean[0]
+        if saturation < 25:
+            # Most tax scans are effectively grayscale. Stretching their luminance
+            # makes faint headings and thin boxed characters clearer to OCR/vision.
+            gray = ImageOps.autocontrast(ImageOps.grayscale(rgb), cutoff=1)
+            rgb = gray.convert("RGB")
+        return rgb.filter(ImageFilter.UnsharpMask(radius=1.2, percent=140, threshold=2))

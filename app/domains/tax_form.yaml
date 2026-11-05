@@ -2,10 +2,22 @@ id: tax_form
 name: Tax form
 description: Extract fields and checkboxes from tax forms.
 default_instructions: |
-  Extract every form field with its label and value, including all checkboxes
-  and their state, and any amounts with their units.
+  Extract the complete document identity first: the exact main title, form name
+  or number, tax type, and tax year. Then extract every form field with its label
+  and value, including all checkboxes and their state, and all amounts with units.
 hints: |
   This is a form image. Fields can be empty; report an empty labeled field as
   "missing" rather than skipping it. Handwriting and low-contrast text may be
   hard to read; use "uncertain" or "unreadable" instead of guessing. Keep
   field numbers or line numbers with their labels.
+  Read boxed characters left-to-right as one value; spaces between OCR characters
+  are layout, not uncertainty. Use the printed field label as evidence together
+  with its value when practical. For currency fields, keep the printed digits and
+  separators in value and put "Rp" in unit. Emit one item per field and never emit
+  alternate versions of the same field. A visible X is a checked checkbox. Mark a
+  field "ok" whenever it is visually clear, even if the OCR layer differs.
+  The large heading at the top is meaningful data, not decoration. Always return
+  the exact visible document title (for example "SPT TAHUNAN PAJAK PENGHASILAN
+  WAJIB PAJAK BADAN") as one prose item with heading "JUDUL DOKUMEN". Also return
+  a visible form code or number such as "1771" as a separate form field. Do this
+  even when the user's requested fields do not explicitly mention the title.

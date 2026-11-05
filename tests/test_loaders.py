@@ -7,7 +7,7 @@ from app.core.errors import DocumentLoadError, UnsupportedInputError
 from app.loaders.image import ImageLoader
 from app.loaders.pdf import PDFLoader
 from app.loaders.registry import LoaderRegistry, load_document
-from PIL import Image
+from PIL import Image, ImageDraw
 
 
 def _settings(**overrides: object) -> Settings:
@@ -218,6 +218,25 @@ def test_image_loader_downscales_to_configured_pixel_limit() -> None:
     )
 
     assert page.width_px * page.height_px <= 100
+
+
+def test_image_loader_enhances_low_contrast_grayscale_documents() -> None:
+    image = Image.new("RGB", (300, 300), color=(230, 230, 230))
+    ImageDraw.Draw(image).rectangle((40, 40, 260, 80), fill=(120, 120, 120))
+    source = BytesIO()
+    image.save(source, format="PNG")
+
+    page = ImageLoader(_settings(ocr_enabled=False)).load(
+        source.getvalue(),
+        "low-contrast.png",
+    ).pages[0]
+    with Image.open(BytesIO(page.image)) as enhanced:
+        minimum, maximum = enhanced.convert("L").getextrema()
+
+    assert page.width_px == 600
+    assert page.height_px == 600
+    assert minimum < 20
+    assert maximum > 240
 
 
 def test_registry_rejects_empty_unsupported_and_mismatched_inputs() -> None:
